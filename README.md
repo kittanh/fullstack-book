@@ -1,14 +1,8 @@
-# Tp API
+# **Full-stack-book**
 
-Le but de ce TP est d'utiliser tout ce que vous avez vu en cours pour créer votre propre API.
-## Exercices
+## **But de l'application**
+Web service ayant pour but de rendre une base de données de livres accessible, modifiable, et de permettre à un utilisateur de mettre des livres en favori.
 
-1. Ajouter une route permettant de renvoyer la date actuelle
-2. Créer un schéma d'un objet de votre choix
-3. Ajouter le branchement avec la base de données.
-4. Ajouter le modèle SQLAlchemy
-5. Ajouter les routes CRUDs permettant de créer, modifier, supprimer un objet de votre choix
-6. Créer des services permettant de réaliser toutes ces opérations
-7. Remplacer le code dans les routes pour utiliser directement les services
-8. Ajouter une route permettant de lire un header, realiser une requête sur votre API via votre navigateur préféré et renvoyer le header correspondant
- 
+## **Base de données**
+La base de données que nous utilisons à été trouvé [ici](https://www.kaggle.com/datasets/jealousleopard/goodreadsbooks). Certaines lignes du fichier .csv comportait des virgules, nous avons modifié le fichier pour que les données soient prises en compte correctement.
+
