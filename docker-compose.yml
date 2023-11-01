@@ -5,7 +5,7 @@ networks:
     driver: bridge
 services:
   api:
-    build: .
+    build: ./app
     networks:
       - default
     volumes:
@@ -25,3 +25,10 @@ services:
     - "5432:5432"
     networks:
       - default
+
+  front:
+    build: ./front
+    networks:
+      - default
+    ports:
+      - "8050:8050"

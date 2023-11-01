@@ -29,7 +29,7 @@ app.layout = html.Div(children=[
 
 )
 def post_book(n, price, name):
-    r = requests.post("http://localhost:5000/books/", json={"name": name, "price": price})
+    r = requests.post("http://api:5000/books/", json={"name": name, "price": price})
     return str(r.json())
 
 @app.callback(
@@ -39,7 +39,7 @@ def post_book(n, price, name):
 
 )
 def get_all_books(n):
-    r = requests.get("http://localhost:5000/all_books")
+    r = requests.get("http://api:5000/all_books")
     return str(r.json())
 
 @app.callback(
@@ -48,8 +48,8 @@ def get_all_books(n):
     prevent_initial_call=True   
 )
 def delete_all(n):
-    r = requests.delete("http://localhost:5000/delete_all")
+    r = requests.delete("http://api:5000/delete_all")
     return str(r.json())
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8050)
+    app.run(debug=True, host="0.0.0.0", port=8050)
