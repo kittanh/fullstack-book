@@ -7,8 +7,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import os
-from sqlalchemy import Column, String, Integer, Float
+from sqlalchemy import Column, String, Integer, Float, ForeignKey
 from fastapi import HTTPException, Depends
+from sqlalchemy.orm import relationship
 
 
 class Book(BaseModel):
@@ -24,7 +25,14 @@ class Book(BaseModel):
     class Config:
         orm_mode = True
 
-POSTGRES_USER = os.environ.get("POSTGRES_USER")
+class UsersBook(BaseModel):
+    book_id: int
+    user_id: str
+
+    class Config:
+        orm_mode = True
+    
+
 POSTGRES_USER = os.environ.get("POSTGRES_USER")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 POSTGRES_DB = os.environ.get("POSTGRES_DB")
@@ -64,6 +72,23 @@ class BooksDB(BaseSQL):
     class Config:
         orm_mode = True
 
+class User(BaseSQL):
+    __tablename__ = "users"
+    username = Column(String, unique=True, primary_key=True)
+    password = Column(String, primary_key=False)
+
+    class Config:
+        orm_mode = True
+
+class UsersBook(BaseSQL):
+    __tablename__ = "users_books"
+
+    book_id = Column(Integer, ForeignKey('books.id'), primary_key=True)
+    user_id = Column(String, ForeignKey('users.username'), primary_key=True)
+
+    book = relationship('Book', back_populates='users_books')
+    user = relationship('User', back_populates='users_books')
+
 ##########################
 
 def init_db():
@@ -79,6 +104,9 @@ def init_db():
                                 text_review_count=int(line_info[9]), publication_date=line_info[10])
                 db.add(new_book)
                 db.commit()
+    new_user = User(username="user@gmail.com", password="Test")
+    db.add(new_user)
+    db.commit()
 
 
 
@@ -108,6 +136,17 @@ async def create_book(book: Book, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_book)
     return db_book
+
+@app.post("/save_book/")
+async def save_book(usersbook: UsersBook, db: Session = Depends(get_db)):
+    record = db.query(UsersBook).filter(UsersBook.book_id == usersbook.book_id and UsersBook.user_id == usersbook.user_id).first()
+    if record:
+        raise HTTPException(status_code=409, detail="Already exists")
+    db_usersbook = UsersBook(**usersbook.dict())
+    db.add(db_usersbook)
+    db.commit()
+    db.refresh(db_usersbook)
+    return db_usersbook
 
 @app.get("/books/{id}")
 async def get_book_by_id(id: int, db: Session = Depends(get_db)):
