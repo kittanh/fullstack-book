@@ -120,6 +120,11 @@ async def get_book_by_id(id: int, db: Session = Depends(get_db)):
 async def get_all_books(db: Session = Depends(get_db)):
     return db.query(BooksDB).all()
 
+@app.get("/books_avg_sup/{avg_rate}")
+async def get_book_with_avg_sup(avg_rate: float, db: Session =  Depends(get_db)):
+    records = db.query(BooksDB).filter(BooksDB.average_rating > avg_rate).all()
+    return records
+
 @app.delete("/delete/{id}", tags=["posts"])
 async def delete_by_id(id: int, db: Session = Depends(get_db)):
     try:
