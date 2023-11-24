@@ -1,33 +1,14 @@
-# Importez les modules nécessaires
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, String, Float, Integer, Date
+from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from datetime import datetime
-from typing import List
 import os
+import pandas as pd
 
-from pydantic import BaseModel, Field
-from datetime import date
+##################
 
-class BookCSV(BaseModel):
-    bookID: int
-    title: str
-    authors: str
-    average_rating: float
-    isbn: str
-    isbn13: str
-    language_code: str
-    num_pages: int
-    ratings_count: int
-    text_reviews_count: int
-    publication_date: date  # Utiliser le type de données date de Python
-    publisher: str
-
-
-# Configuration de la base de données
 POSTGRES_USER = os.environ.get("POSTGRES_USER")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 POSTGRES_DB = os.environ.get("POSTGRES_DB")
@@ -38,70 +19,88 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 BaseSQL = declarative_base()
 
-# Modèle SQLAlchemy pour les livres dans la base de données
-class BookDB(BaseSQL):
+class Book(BaseModel):
+    name: str
+    price: float
+
+class CsvBook(BaseSQL):
     __tablename__ = "books"
     bookID = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
+    title = Column(String)
     authors = Column(String)
     average_rating = Column(Float)
-    isbn = Column(String, index=True)
-    isbn13 = Column(String, index=True)
+    isbn = Column(String)
+    isbn13 = Column(String)
     language_code = Column(String)
     num_pages = Column(Integer)
     ratings_count = Column(Integer)
     text_reviews_count = Column(Integer)
-    publication_date = Column(Date)
+    publication_date = Column(String)
     publisher = Column(String)
 
+    class Config:
+        orm_mode = True
 
-# FastAPI application
-app = FastAPI(
-    title="My title",
-    description="My description",
-    version="0.0.1",
-)
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
-# Middleware CORS pour autoriser les requêtes depuis le frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Fonction pour obtenir une instance de la base de données
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
-# Créer la table de la base de données au démarrage
 @app.on_event("startup")
 async def startup_event():
     BaseSQL.metadata.create_all(bind=engine)
+    BaseCSV.metadata.create_all(bind=engine)
 
-# Endpoint pour insérer des livres dans la base de données depuis le CSV
-@app.post("/insert_books/")
-async def insert_books(books: List[BookCSV], db: Session = Depends(get_db)):
-    for book in books:
-        db_book = BookDB(**book.dict())
-        db.add(db_book)
+@app.post("/books/")
+async def create_book(book: Book, db: Session = Depends(get_db)):
+    record = db.query(BooksDB).filter(BooksDB.name == book.name).first()
+    if record:
+        raise HTTPException(status_code=409, detail="Already exists")
+    db_book = BooksDB(**book.dict())
+    db.add(db_book)
     db.commit()
-    return {"message": "Books inserted successfully"}
+    db.refresh(db_book)
+    return db_book
 
-# Endpoint pour rechercher des livres en fonction du titre
-@app.get("/search_books/")
-async def search_books(
-    title: str = Query(..., title="Search for books with this title"),
-    db: Session = Depends(get_db)
-):
-# Modification suggérée
-    books = db.query(BookDB).filter(BookDB.title.ilike(f"%{title}%")).all()
+@app.get("/books/{name}")
+async def get_book_by_name(name: str, db: Session = Depends(get_db)):
+    record = db.query(BooksDB).filter(BooksDB.name == name).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Not Found") 
+    return record
 
-    if not books:
-        raise HTTPException(status_code=404, detail="No books found with the given title")
-    return books
+@app.get("/all_books")
+async def get_all_books(db: Session = Depends(get_db)):
+    return db.query(BooksDB).all()
+
+@app.delete("/delete/{name}", tags=["posts"])
+async def delete_by_name(name: str, db: Session = Depends(get_db)):
+    try:
+        num_rows = db.query(BooksDB).filter_by(name=name).delete()
+        if num_rows == 0:
+            raise HTTPException(status_code=404, detail="Record not found")
+        db.commit()
+    except HTTPException as e:
+        raise
+    except Exception as e:
+        return {"error": e}
+    return {"book": f"delete book {name}"}
+
+@app.delete("/delete_all")
+async def delete_all_books(db: Session = Depends(get_db)):
+    try:
+        num_rows = db.query(BooksDB).filter().delete()
+        if num_rows == 0:
+            raise HTTPException(status_code=404, detail="Record not found")
+        db.commit()
+    except HTTPException as e:
+        raise
+    except Exception as e:
+        return {"error": e}
+    return {"book": f"delete all books"}
+
+@app.get("/search_books")
+async def search_books(query: str, db: Session = Depends(get_db)):
+    results = db.query(CsvBook).filter(CsvBook.title.ilike(f"%{query}%")).all()
+    if not results:
+        raise HTTPException(status_code=404, detail="No matching books found")
+    return results
