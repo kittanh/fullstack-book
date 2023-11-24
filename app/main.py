@@ -19,27 +19,53 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 BaseSQL = declarative_base()
 
-class Book(BaseModel):
-    name: str
-    price: float
+def get_db():
+    try:
+        db = SessionLocal()
+        yield db
+    finally:
+        db.close()
 
-class CsvBook(BaseSQL):
+
+
+class BooksDB(BaseSQL):
     __tablename__ = "books"
-    bookID = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
-    authors = Column(String)
-    average_rating = Column(Float)
-    isbn = Column(String)
-    isbn13 = Column(String)
-    language_code = Column(String)
-    num_pages = Column(Integer)
-    ratings_count = Column(Integer)
-    text_reviews_count = Column(Integer)
-    publication_date = Column(String)
-    publisher = Column(String)
-
+    id = Column(Integer, primary_key=True)
+    authors = Column(String, primary_key=False)
+    title = Column(String, primary_key=False)
+    average_rating = Column(Float, primary_key=False)
+    language_code = Column(String, primary_key=False)
+    num_pages = Column(Integer, primary_key=False)
+    rating_count = Column(Integer, primary_key=False)
+    text_review_count = Column(Integer, primary_key=False)
+    publication_date = Column(String, primary_key=False)
+    
     class Config:
         orm_mode = True
+
+##########################
+
+def init_db():
+    db = SessionLocal()
+    with open("books.csv") as file:
+        next(file)  # On saute la première ligne header
+        for line in file:
+            line_info = line.split(",")                
+            if len(line_info)==12:            
+                new_book = BooksDB(id=int(line_info[0]), title=line_info[1], authors=line_info[2],
+                                average_rating=float(line_info[3]), language_code=line_info[6],
+                                num_pages=int(line_info[7]), rating_count=int(line_info[8]),
+                                text_review_count=int(line_info[9]), publication_date=line_info[10])
+                db.add(new_book)
+                db.commit()
+
+
+
+app = FastAPI(
+    title="My title",
+    description="My description",
+    version="0.0.1",
+)
 
 @app.get("/")
 def read_root():
