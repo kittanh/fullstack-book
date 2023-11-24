@@ -47,52 +47,38 @@ def get_db():
     finally:
         db.close()
 
-def init_db():
-    db = SessionLocal()
-    new_book = BooksDB(id=0, title="TEST1", authors="M TEST",
-                       average_rating=4.5, language_code="FR",
-                       num_pages=100, rating_count=2,
-                       text_review_count=0, publication_date="12/01/2000")
-    db.add(new_book)
-    db.commit()
-    new_book = BooksDB(id=1, title="TEST2", authors="M TEST",
-                       average_rating=4.5, language_code="FR",
-                       num_pages=100, rating_count=2,
-                       text_review_count=0, publication_date="12/01/2000")
-    db.add(new_book)
-    db.commit()
 
-    # # Fonctionne mais problèmes plusieurs fois le même titre
-    # db = SessionLocal()
-    # with open("books.csv") as file:
-    #     next(file)  # On saute la première ligne header
-    #     for line in file:
-    #         line_info = line.split(",")                
-    #         if len(line_info)==12:            
-    #             new_book = BooksDB(id=int(line_info[0]), title=line_info[1], authors=line_info[2],
-    #                             average_rating=float(line_info[3]), language_code=line_info[6],
-    #                             num_pages=int(line_info[7]), rating_count=int(line_info[8]),
-    #                             text_review_count=int(line_info[9]), publication_date=line_info[10])
-    #             db.add(new_book)
-    #             db.commit()
 
 class BooksDB(BaseSQL):
     __tablename__ = "books"
     id = Column(Integer, primary_key=True)
-    title = Column(String)
-    authors = Column(String)
-    average_rating = Column(Float)
-    language_code = Column(String)
-    num_pages = Column(Integer)
-    rating_count = Column(Integer)
-    text_review_count = Column(Integer)
-    publication_date = Column(String)
+    authors = Column(String, primary_key=False)
+    title = Column(String, primary_key=False)
+    average_rating = Column(Float, primary_key=False)
+    language_code = Column(String, primary_key=False)
+    num_pages = Column(Integer, primary_key=False)
+    rating_count = Column(Integer, primary_key=False)
+    text_review_count = Column(Integer, primary_key=False)
+    publication_date = Column(String, primary_key=False)
     
     class Config:
         orm_mode = True
 
 ##########################
 
+def init_db():
+    db = SessionLocal()
+    with open("books.csv") as file:
+        next(file)  # On saute la première ligne header
+        for line in file:
+            line_info = line.split(",")                
+            if len(line_info)==12:            
+                new_book = BooksDB(id=int(line_info[0]), title=line_info[1], authors=line_info[2],
+                                average_rating=float(line_info[3]), language_code=line_info[6],
+                                num_pages=int(line_info[7]), rating_count=int(line_info[8]),
+                                text_review_count=int(line_info[9]), publication_date=line_info[10])
+                db.add(new_book)
+                db.commit()
 
 
 
