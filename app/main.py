@@ -68,6 +68,9 @@ def init_db():
                                    text_review_count=int(line_info[9]), publication_date=line_info[10])
                 db.add(new_book)
                 db.commit()
+    new_user = User(username="user@gmail.com", password="Test")
+    db.add(new_user)
+    db.commit()
 
 app = FastAPI(
     title="My title",
@@ -106,6 +109,11 @@ async def get_book_by_id(id: int, db: Session = Depends(get_db)):
 @app.get("/all_books")
 async def get_all_books(db: Session = Depends(get_db)):
     return db.query(BooksDB).all()
+
+@app.get("/books_avg_sup/{avg_rate}")
+async def get_book_with_avg_sup(avg_rate: float, db: Session =  Depends(get_db)):
+    records = db.query(BooksDB).filter(BooksDB.average_rating > avg_rate).all()
+    return records
 
 @app.delete("/delete/{id}", tags=["posts"])
 async def delete_by_id(id: int, db: Session = Depends(get_db)):
