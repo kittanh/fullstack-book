@@ -1,3 +1,4 @@
+
 import requests
 import dash
 from dash import Dash, Input, Output, html, dcc, ctx, no_update, callback
@@ -11,8 +12,8 @@ app = dash.Dash(__name__)
 # Ajoute le thème Bootstrap pour l'apparence
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
 
-app.layout = html.Div(style={'backgroundColor': '#0E1012'}, children=[
-    html.H1(children="API", style={'color': 'white'}),
+app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
+    html.H1(children="API", style={'color': '#01756C'}),
     
     html.Div(style={'margin': '20px'}),
 
@@ -41,23 +42,23 @@ app.layout = html.Div(style={'backgroundColor': '#0E1012'}, children=[
         page_current=0,
         page_size=10,
         style_cell={
-                'backgroundColor': 'rgb(50, 50, 50)',
+                'backgroundColor': '#01756C',
                 'color': 'white',
                 'fontSize': '13px',
                 'textAlign': 'left'
             },
-        style_header={'backgroundColor': 'rgb(30, 30, 30)'},
+        style_header={'backgroundColor': '#01756C'},
 
         style_filter={
-            'backgroundColor': 'rgb(211, 211, 211)',
+            'backgroundColor': '#EDF8F8',
         },
 
         style_data_conditional=[
         {
             'if': {'state': 'selected'},
-            'backgroundColor': '#E1E1EB',
+            'backgroundColor': '#01756C',
             'color': '#3C3C3C',
-            'border': '1px solid #E1E1EB',  # Bordure colorée
+            'border': '1px solid #01756C',  # Bordure colorée
             'textAlign': 'left',  # Aligner le texte à gauche
         }
         ],
@@ -88,21 +89,21 @@ app.layout = html.Div(style={'backgroundColor': '#0E1012'}, children=[
         page_current=0,
         page_size=10,
         style_cell={
-                'backgroundColor': 'rgb(50, 50, 50)',
+                'backgroundColor': '#01756C',
                 'color': 'white',
                 'fontSize': '13px',
                 'textAlign': 'left'
             },
 
         style_filter={
-            'backgroundColor': 'rgb(211, 211, 211)',
+            'backgroundColor': '#EDF8F8',
         },
         style_data_conditional=[
         {
             'if': {'state': 'selected'},
-            'backgroundColor': '#E1E1EB',
+            'backgroundColor': '#01756C',
             'color': '#3C3C3C',
-            'border': '1px solid #E1E1EB',  # Bordure colorée
+            'border': '1px solid #01756C',  # Bordure colorée
             'textAlign': 'left',  # Aligner le texte à gauche
         }
         ],
@@ -112,7 +113,7 @@ app.layout = html.Div(style={'backgroundColor': '#0E1012'}, children=[
             [
                 dbc.ModalHeader("Vous avez ajouté un livre à votre liste de lecture"),
                 dbc.ModalBody(id="modal-content"),
-                dbc.ModalFooter(dbc.Button("Fermer", id="close", className="ml-auto", color="dark")),
+                dbc.ModalFooter(dbc.Button("Fermer", id="close", className="ml-auto", color="success")),
             ],
             id="modal",
     ),
@@ -144,6 +145,7 @@ def open_modal(selected_rows, _):
     Input("bouton_recherche", "n_clicks"),  
     prevent_initial_call=True
 )
+
 def get_all_books_table(n):
     global books_data  # Utilise la variable globale
     r = requests.get("http://api:5000/all_books")
@@ -225,3 +227,4 @@ def delete_all(n):
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=8050)
+
