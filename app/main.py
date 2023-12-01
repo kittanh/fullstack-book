@@ -32,16 +32,16 @@ class User(BaseModel):
     class Config:
         orm_mode = True
 
-class Status(str, Enum):
-    want = "Want to read"
-    reading = "Currently reading"
-    read = "Read"
+# class Status(str, Enum):
+#     want = "Want to read"
+#     reading = "Currently reading"
+#     read = "Read"
 
 class UsersBook(BaseModel):
     book_id: int
     user_id: str
-    personal_rating: conint(ge=0, le=5)
-    status: Status
+    # personal_rating: conint(ge=0, le=5)
+    # status: Status
 
     class Config:
         orm_mode = True
@@ -102,7 +102,7 @@ class UsersBookDB(BaseSQL):
     book_id = Column(Integer, ForeignKey('books.id'), primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     personal_rating = Column(Integer, CheckConstraint('personal_rating >= 0 AND personal_rating <= 5'), nullable=True)
-    status = Column(SQLAlchemyEnum(Status), nullable=True)
+    # status = Column(SQLAlchemyEnum(Status), nullable=True)
 
 
 
@@ -126,6 +126,21 @@ def init_db():
                 db.add(new_book)
                 db.commit()
 
+    new_user = UserDB(id=0, username="chatvoyou", email="chatvoyou@gmail.com", password="Test")
+    db.add(new_user)
+    db.commit()
+
+def init_user():
+    db = SessionLocal()
+    new_user = UserDB(id=0, username="chatvoyou", email="chatvoyou@gmail.c om", password="Test")
+    db.add(new_user)
+    db.commit()
+
+def init_usersbooks():
+    db = SessionLocal()
+    for i in range (1,3):
+       db.add(UsersBookDB(book_id = i, user_id=0))
+       db.commit()
 
 
 
@@ -144,12 +159,15 @@ async def startup_event():
     BaseSQL.metadata.create_all(bind=engine)
     if not SessionLocal().query(BooksDB).first():
         init_db()
+    if not SessionLocal().query(UserDB).first():
+        init_user()
+        init_usersbooks()
 
 @app.post("/books/", response_model=Book)
 async def create_book(book: Book, db: Session = Depends(get_db)):
     record = db.query(BooksDB).filter(BooksDB.id == book.id).first()
     if record:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already exists")
+        raise HTTPException(status_code=409, detail="Already exists")
     db_book = BooksDB(**book.dict())
     db.add(db_book)
     db.commit()
@@ -182,21 +200,14 @@ async def save_book(usersbook: UsersBook, db: Session = Depends(get_db)):
 async def get_book_by_id(id: int, db: Session = Depends(get_db)):
     record = db.query(BooksDB).filter(BooksDB.id == id).first()
     if not record:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+        raise HTTPException(status_code=404, detail="Not Found")
     return record
 
 @app.get("/users/{id}")
 async def get_user_by_id(id: int, db: Session = Depends(get_db)):
     record = db.query(UserDB).filter(UserDB.id == id).first()
     if not record:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
-    return record
-
-@app.get("/users/{id}")
-async def get_user_by_id(id: int, db: Session = Depends(get_db)):
-    record = db.query(UserDB).filter(UserDB.id == id).first()
-    if not record:
-        raise HTTPException(status_code=404, detail="Not Found") 
+        raise HTTPException(status_code=404, detail="Not Found")
     return record
 
 @app.get("/all_users")
@@ -227,7 +238,7 @@ async def delete_by_id(id: int, db: Session = Depends(get_db)):
     try:
         num_rows = db.query(BooksDB).filter_by(id=id).delete()
         if num_rows == 0:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found")
+            raise HTTPException(status_code=404, detail="Record not found")
         db.commit()
     except HTTPException as e:
         raise
@@ -240,7 +251,7 @@ async def delete_all_books(db: Session = Depends(get_db)):
     try:
         num_rows = db.query(BooksDB).filter().delete()
         if num_rows == 0:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found")
+            raise HTTPException(status_code=404, detail="Record not found")
         db.commit()
     except HTTPException as e:
         raise
