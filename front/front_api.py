@@ -12,8 +12,15 @@ app = dash.Dash(__name__)
 # Ajoute le thème Bootstrap pour l'apparence
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
 
+nom_user = "chatvoyou"
+
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
-    html.H1(children="API", style={'color': '#01756C'}),
+    html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold"}),
+
+    html.Div(style={'margin': '20px'}),
+
+    html.H3(children=f" Bienvenue {nom_user} !", style={'color': '#01756C'}),
+
     
     html.Div(style={'margin': '20px'}),
 
