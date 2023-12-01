@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, conint
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -7,10 +7,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import os
-from sqlalchemy import Column, String, Integer, Float, ForeignKey
+from sqlalchemy import Column, String, Integer, Float, ForeignKey, CheckConstraint
 from fastapi import HTTPException, Depends
-from sqlalchemy.orm import relationship
-
+from sqlalchemy.orm import relationship, joinedload
+from enum import Enum
+from sqlalchemy import Enum as SQLAlchemyEnum
 
 class Book(BaseModel):
     id: int
@@ -25,9 +26,24 @@ class Book(BaseModel):
     class Config:
         orm_mode = True
 
+class User(BaseModel):
+    id: int
+    username: str
+    email: str
+    password: str
+    class Config:
+        orm_mode = True
+
+class Status(str, Enum):
+    want = "Want to read"
+    reading = "Currently reading"
+    read = "Read"
+
 class UsersBook(BaseModel):
     book_id: int
     user_id: str
+    personal_rating: conint(ge=0, le=5)
+    status: Status
 
     class Config:
         orm_mode = True
@@ -47,6 +63,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 
 BaseSQL = declarative_base()
+
 
 def get_db():
     try:
@@ -69,30 +86,43 @@ class BooksDB(BaseSQL):
     text_review_count = Column(Integer, primary_key=False)
     publication_date = Column(String, primary_key=False)
     
+    users_books = relationship('UsersBookDB', back_populates='book')
+
     class Config:
         orm_mode = True
 
-class User(BaseSQL):
+class UserDB(BaseSQL):
     __tablename__ = "users"
-    username = Column(String, unique=True, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, primary_key=False)
+    email = Column(String, unique=True, primary_key=False)
     password = Column(String, primary_key=False)
 
+    users_books = relationship('UsersBookDB', back_populates='user')
+
     class Config:
         orm_mode = True
 
-class UsersBook(BaseSQL):
+
+
+class UsersBookDB(BaseSQL):
     __tablename__ = "users_books"
 
     book_id = Column(Integer, ForeignKey('books.id'), primary_key=True)
-    user_id = Column(String, ForeignKey('users.username'), primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+    personal_rating = Column(Integer, CheckConstraint('personal_rating >= 0 AND personal_rating <= 5'), nullable=True)
+    status = Column(SQLAlchemyEnum(Status), nullable=True)
 
-    book = relationship('Book', back_populates='users_books')
-    user = relationship('User', back_populates='users_books')
+
+
+    book = relationship('BooksDB', back_populates='users_books')
+    user = relationship('UserDB', back_populates='users_books')
 
 ##########################
 
 def init_db():
     db = SessionLocal()
+    
     with open("books.csv") as file:
         next(file)  # On saute la première ligne header
         for line in file:
@@ -104,9 +134,7 @@ def init_db():
                                 text_review_count=int(line_info[9]), publication_date=line_info[10])
                 db.add(new_book)
                 db.commit()
-    new_user = User(username="user@gmail.com", password="Test")
-    db.add(new_user)
-    db.commit()
+
 
 
 
@@ -137,12 +165,23 @@ async def create_book(book: Book, db: Session = Depends(get_db)):
     db.refresh(db_book)
     return db_book
 
-@app.post("/save_book/")
-async def save_book(usersbook: UsersBook, db: Session = Depends(get_db)):
-    record = db.query(UsersBook).filter(UsersBook.book_id == usersbook.book_id and UsersBook.user_id == usersbook.user_id).first()
+@app.post("/users/")
+async def create_user(user: User, db: Session = Depends(get_db)):
+    record = db.query(UserDB).filter(UserDB.id == user.id).first()
     if record:
         raise HTTPException(status_code=409, detail="Already exists")
-    db_usersbook = UsersBook(**usersbook.dict())
+    db_user = UserDB(**user.dict())
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/save_book/")
+async def save_book(usersbook: UsersBook, db: Session = Depends(get_db)):
+    record = db.query(UsersBookDB).filter(UsersBookDB.book_id == usersbook.book_id and UsersBookDB.user_id == usersbook.user_id).first()
+    if record:
+        raise HTTPException(status_code=409, detail="Already exists")
+    db_usersbook = UsersBookDB(**usersbook.dict())
     db.add(db_usersbook)
     db.commit()
     db.refresh(db_usersbook)
@@ -155,9 +194,30 @@ async def get_book_by_id(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Not Found") 
     return record
 
+@app.get("/users/{id}")
+async def get_user_by_id(id: int, db: Session = Depends(get_db)):
+    record = db.query(UserDB).filter(UserDB.id == id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Not Found") 
+    return record
+
+@app.get("/all_users")
+async def get_all_users(db: Session = Depends(get_db)):
+    return db.query(UserDB).all()
+
 @app.get("/all_books")
 async def get_all_books(db: Session = Depends(get_db)):
     return db.query(BooksDB).all()
+
+@app.get("/users_books/{user_id}")
+async def get_books_of_user(user_id: int, db: Session =  Depends(get_db)):
+    user_books = (
+        db.query(BooksDB)
+        .join(UsersBookDB)
+        .filter(UsersBookDB.user_id == user_id)
+        .all()
+    )
+    return user_books
 
 @app.get("/books_avg_sup/{avg_rate}")
 async def get_book_with_avg_sup(avg_rate: float, db: Session =  Depends(get_db)):
