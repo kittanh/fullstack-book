@@ -152,7 +152,6 @@ def open_modal(selected_rows, _):
     Input("bouton_recherche", "n_clicks"),  
     prevent_initial_call=True
 )
-
 def get_all_books_table(n):
     global books_data  # Utilise la variable globale
     r = requests.get("http://api:5000/all_books")
