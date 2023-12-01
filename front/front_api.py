@@ -15,6 +15,18 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.
 nom_user = "chatvoyou"
 user_id = 0
 
+def get_all_books_list():
+    try:
+        r = requests.get("http://localhost:5000/all_books")
+        r.raise_for_status()  # Raise an HTTPError for bad responses
+        books_list = r.json()
+        return books_list
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        return None
+    
+books_data = get_all_books_list()
+
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold"}),
 
@@ -83,7 +95,6 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
             {'name': 'Titre', 'id': 'title'},
             {'name': 'Auteur', 'id': 'authors'},
         ],
-        
         editable=True,
         filter_action="native",
         sort_action="native",
@@ -128,8 +139,7 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     
 ])
 
-# Variable globale pour stocker les données des livres
-books_data = []
+
 
 @app.callback(
     Output("modal", "is_open"),
@@ -148,25 +158,17 @@ def open_modal(selected_rows, _):
 
     return no_update, no_update
 
-@app.callback(
-    Output('table', 'data'),
-    Input("bouton_recherche", "n_clicks"),  
-    prevent_initial_call=True
-)
+# @app.callback(
+#     Output('table', 'data'),
+#     Input("bouton_recherche", "n_clicks"),  
+#     prevent_initial_call=True
+# )
 
-def get_all_books_table(n):
-    global books_data  # Utilise la variable globale
-    r = requests.get("http://api:5000/all_books")
-    books_data = r.json()
-    return books_data
-
-def get_all_books_table():
-    global books_data  # Utilise la variable globale
-    r = requests.get("http://api:5000/all_books")
-    books_data = r.json()
-    return books_data
-
-books = get_all_books_table()
+# def get_all_books_table(n):
+#     global books_data  # Utilise la variable globale
+#     r = requests.get("http://api:5000/all_books")
+#     books_data = r.json()
+#     return books_data
 
 @app.callback(
     Output('favorites-table', 'data'),
