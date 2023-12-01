@@ -13,6 +13,7 @@ app = dash.Dash(__name__)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
 
 nom_user = "chatvoyou"
+user_id = 0
 
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold"}),
@@ -159,20 +160,50 @@ def get_all_books_table(n):
     books_data = r.json()
     return books_data
 
+def get_all_books_table():
+    global books_data  # Utilise la variable globale
+    r = requests.get("http://api:5000/all_books")
+    books_data = r.json()
+    return books_data
+
+books = get_all_books_table()
 
 @app.callback(
     Output('favorites-table', 'data'),
     Input('table', 'selected_rows'),
     prevent_initial_call=True
 )
+
 def update_favorites(selected_rows):
     global books_data  # Utilise la variable globale
+
+    # r = requests.get("http://api:5000/users_books/"+str(user_id))
+    # users_books = r.json()
+
+    # if not selected_rows:
+    #     return dash.no_update
+
+    # selected_books = [books_data[i] for i in selected_rows]
+    # return users_books + selected_books
 
     if not selected_rows:
         return dash.no_update
 
     selected_books = [books_data[i] for i in selected_rows]
-    return selected_books
+
+    for book in selected_books:
+        usersbook = {
+            "book_id": book["id"],
+            "user_id": user_id
+        }
+
+        r = requests.post("http://api:5000/save_book/", json=usersbook)
+
+        if r.status_code == 409:
+            print(f"Book {book['title']} already exists in the user's favorites.")
+
+    r = requests.get(f"http://api:5000/users_books/{user_id}")
+    return r.json()
 
 """
 @app.callback(
