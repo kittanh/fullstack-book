@@ -158,19 +158,6 @@ def open_modal(selected_rows, _):
 
     return no_update, no_update
 
-<<<<<<< HEAD
-# @app.callback(
-#     Output('table', 'data'),
-#     Input("bouton_recherche", "n_clicks"),  
-#     prevent_initial_call=True
-# )
-
-# def get_all_books_table(n):
-#     global books_data  # Utilise la variable globale
-#     r = requests.get("http://api:5000/all_books")
-#     books_data = r.json()
-#     return books_data
-=======
 @app.callback(
     Output('table', 'data'),
     Input("bouton_recherche", "n_clicks"),  
@@ -182,14 +169,6 @@ def get_all_books_table(n):
     books_data = r.json()
     return books_data
 
-def get_all_books_table():
-    global books_data  # Utilise la variable globale
-    r = requests.get("http://api:5000/all_books")
-    books_data = r.json()
-    return books_data
-
-books = get_all_books_table()
->>>>>>> 6a765aa61c81e7876aac9b410b543b094138a2e8
 
 @app.callback(
     Output('favorites-table', 'data'),
@@ -288,4 +267,3 @@ def delete_all(n):
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=8050)
-
