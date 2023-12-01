@@ -1,32 +1,173 @@
+
 import requests
 import dash
-from dash import dcc, html
+from dash import Dash, Input, Output, html, dcc, ctx, no_update, callback
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input
-from dash.dependencies import Output
-from dash.dependencies import State
+from dash.dependencies import Input, Output, State
+import dash_table
+
 
 app = dash.Dash(__name__)
 
-app.layout = html.Div(children=[
-    html.H1(children="Test API book"),
-    dbc.Row([dbc.Input(id="book_id", placeholder="ID du livre (int)"),
-             dbc.Input(id='book_title', placeholder="Titre du livre (str)"),
-             dbc.Input(id='book_authors', placeholder="Nom de l'autheur"),
-             dbc.Input(id='book_average_rating', placeholder="Note moyenne du livre (float)"),
-             dbc.Input(id='book_language_code', placeholder="Code de la langue du livre"),
-             dbc.Input(id='book_num_pages', placeholder="Nombre de pages (int)"),
-             dbc.Input(id='book_rating_count', placeholder="Nombre de notes (int)"),
-             dbc.Input(id='book_review_count', placeholder="Nombre de revus du livre (int)"),
-             dbc.Input(id='book_publication_date', placeholder="Date de publication du livre (int)"),]),
-    dbc.Button("POST", id="post_button", n_clicks=0),
-    html.H2(id="output_post"),
-    dbc.Button("GET_ALL_BOOKS", id="all_books_button", n_clicks=0),
-    html.H2(id="output_get"),
-    dbc.Button("DELETE_ALL_BOOKS", id="delete_all_button", n_clicks=0),
-    html.H2(id="output_delete")
+# Ajoute le thème Bootstrap pour l'apparence
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
+
+app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
+    html.H1(children="API", style={'color': '#01756C'}),
+    
+    html.Div(style={'margin': '20px'}),
+
+    # DataTable pour afficher tous les livres
+    html.Button("Ajouter des livres à ma liste de lecture", id="bouton_recherche", n_clicks=0),
+
+    html.Div(style={'margin': '20px'}),
+
+    dash_table.DataTable(
+        id='table',
+        columns=[
+            {'name': 'ID', 'id': 'id'},
+            {'name': 'Titre', 'id': 'title'},
+            {'name': 'Auteur', 'id': 'authors'},
+            # Ajoute d'autres colonnes en fonction de tes besoins
+        ],
+        editable=True,
+        filter_action="native",
+        sort_action="native",
+        sort_mode="multi",
+        column_selectable="single",
+        row_selectable="multi",
+        selected_columns=[],
+        selected_rows=[],
+        page_action="native",
+        page_current=0,
+        page_size=10,
+        style_cell={
+                'backgroundColor': '#01756C',
+                'color': 'white',
+                'fontSize': '13px',
+                'textAlign': 'left'
+            },
+        style_header={'backgroundColor': '#01756C'},
+
+        style_filter={
+            'backgroundColor': '#EDF8F8',
+        },
+
+        style_data_conditional=[
+        {
+            'if': {'state': 'selected'},
+            'backgroundColor': '#01756C',
+            'color': '#3C3C3C',
+            'border': '1px solid #01756C',  # Bordure colorée
+            'textAlign': 'left',  # Aligner le texte à gauche
+        }
+        ],
+    ),
+
+    
+    html.Div(style={'margin': '20px'}),
+
+    # DataTable pour afficher les favoris
+    dash_table.DataTable(
+        id='favorites-table',
+        columns=[
+            {'name': 'ID', 'id': 'id'},
+            {'name': 'Titre', 'id': 'title'},
+            {'name': 'Auteur', 'id': 'authors'},
+        ],
+        
+        editable=True,
+        filter_action="native",
+        sort_action="native",
+        sort_mode="multi",
+        row_deletable=True,
+        column_selectable="single",
+        row_selectable="multi",
+        selected_columns=[],
+        selected_rows=[],
+        page_action="native",
+        page_current=0,
+        page_size=10,
+        style_cell={
+                'backgroundColor': '#01756C',
+                'color': 'white',
+                'fontSize': '13px',
+                'textAlign': 'left'
+            },
+
+        style_filter={
+            'backgroundColor': '#EDF8F8',
+        },
+        style_data_conditional=[
+        {
+            'if': {'state': 'selected'},
+            'backgroundColor': '#01756C',
+            'color': '#3C3C3C',
+            'border': '1px solid #01756C',  # Bordure colorée
+            'textAlign': 'left',  # Aligner le texte à gauche
+        }
+        ],
+    ),
+
+    dbc.Modal(
+            [
+                dbc.ModalHeader("Vous avez ajouté un livre à votre liste de lecture"),
+                dbc.ModalBody(id="modal-content"),
+                dbc.ModalFooter(dbc.Button("Fermer", id="close", className="ml-auto", color="success")),
+            ],
+            id="modal",
+    ),
+    
 ])
 
+# Variable globale pour stocker les données des livres
+books_data = []
+
+@app.callback(
+    Output("modal", "is_open"),
+    Output("modal-content", "children"),
+    Input('table', 'selected_rows'),
+    Input("close", "n_clicks"),
+)
+def open_modal(selected_rows, _):
+    if ctx.triggered_id == "close":
+        return False, no_update
+    if selected_rows:
+        last_selected_row = selected_rows[-1]
+        selected_book = books_data[last_selected_row]
+        title = selected_book.get("title", "Unknown Title")
+        return True, f"{title}"
+
+    return no_update, no_update
+
+@app.callback(
+    Output('table', 'data'),
+    Input("bouton_recherche", "n_clicks"),  
+    prevent_initial_call=True
+)
+
+def get_all_books_table(n):
+    global books_data  # Utilise la variable globale
+    r = requests.get("http://api:5000/all_books")
+    books_data = r.json()
+    return books_data
+
+
+@app.callback(
+    Output('favorites-table', 'data'),
+    Input('table', 'selected_rows'),
+    prevent_initial_call=True
+)
+def update_favorites(selected_rows):
+    global books_data  # Utilise la variable globale
+
+    if not selected_rows:
+        return dash.no_update
+
+    selected_books = [books_data[i] for i in selected_rows]
+    return selected_books
+
+"""
 @app.callback(
     Output("output_post", "children"),
     Input("post_button", "n_clicks"),
@@ -39,37 +180,51 @@ app.layout = html.Div(children=[
     State("book_rating_count", "value"),
     State("book_review_count", "value"),
     State("book_publication_date", "value"),
-
     prevent_initial_call=True
 )
 def post_book(n, id, title, authors, average_rating, language_code, num_pages, rating_count,
-               review_count, publication_date):
+              review_count, publication_date):
     r = requests.post("http://api:5000/books/",
-                      json={"id": id, "title": title, "authors": authors,"average_rating": average_rating,
-                            "language_code": language_code,"num_pages": num_pages,
-                            "rating_count": rating_count,"text_review_count": review_count,
+                      json={"id": id, "title": title, "authors": authors, "average_rating": average_rating,
+                            "language_code": language_code, "num_pages": num_pages,
+                            "rating_count": rating_count, "text_review_count": review_count,
                             "publication_date": publication_date
                             })
     return str(r.json())
 
 @app.callback(
-    Output("output_get", "children"),
-    Input("all_books_button", "n_clicks"),
-    prevent_initial_call=True
-
-)
-def get_all_books(n):
-    r = requests.get("http://api:5000/all_books")
-    return str(r.json())
-
-@app.callback(
     Output("output_delete", "children"),
     Input("delete_all_button", "n_clicks"),
-    prevent_initial_call=True   
+    prevent_initial_call=True
 )
 def delete_all(n):
     r = requests.delete("http://api:5000/delete_all")
     return str(r.json())
+"""
+"""
+    html.Div([
+        dbc.Row([
+            dbc.Input(id="book_id", placeholder="ID du livre (int)"),
+            dbc.Input(id='book_title', placeholder="Titre du livre (str)"),
+            dbc.Input(id='book_authors', placeholder="Nom de l'auteur"),
+            dbc.Input(id='book_average_rating', placeholder="Note moyenne du livre (float)"),
+            dbc.Input(id='book_language_code', placeholder="Code de la langue du livre"),
+            dbc.Input(id='book_num_pages', placeholder="Nombre de pages (int)"),
+            dbc.Input(id='book_rating_count', placeholder="Nombre de notes (int)"),
+            dbc.Input(id='book_review_count', placeholder="Nombre de revues du livre (int)"),
+            dbc.Input(id='book_publication_date', placeholder="Date de publication du livre (int)"),
+        ]),
+        dbc.Button("POST", id="post_button", n_clicks=0),
+        html.H2(id="output_post"),
+        dbc.Button("GET_ALL_BOOKS", id="all_books_button", n_clicks=0),
+        html.H2(id="output_get"),
+
+        dbc.Button("DELETE_ALL_BOOKS", id="delete_all_button", n_clicks=0),
+        html.H2(id="output_delete"),
+
+    ], style={'margin': '80px'})  # Ajoute de la marge à l'élément
+    """
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=8050)
+
