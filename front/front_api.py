@@ -4,13 +4,24 @@ from dash import Dash, Input, Output, html, dcc, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_table
+import os
+import dash_auth
+from flask import request
+
+VALID_USERNAME_PASSWORD_PAIRS = [
+    ['user1', 'aaa'],
+    ['user2', 'bbb']
+]
+
 
 
 # Ajoute le thème Bootstrap pour l'apparence
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
 
-nom_user = "chatvoyou"
-user_id = "chatvoyou"
 
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     
@@ -18,7 +29,7 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
 
     html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold"}),
 
-    html.H3(children=f" Bienvenue {nom_user} !", style={'color': '#01756C', 'display': 'inline-block', 'margin-left': '20px'}),
+    html.H3(children="", id="user-output", style={'color': '#01756C', 'display': 'inline-block', 'margin-left': '20px'}),
 
     
     html.Div(style={'margin': '20px'}),
@@ -125,10 +136,21 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
             ],
             id="modal",
     ),
-
+    
 ])
+@app.callback(
+    Output(component_id='user-output', component_property='children'),
+    Input('dummy-input', 'value'),
+    prevent_initial_call=False
+)
+def update_output_div(n):
+    global username 
+    username = request.authorization['username']
+    user = {"id": username}
+    requests.post("http://api:5000/users/", json=user)
+    return f'Bienvenue {username} !'
 
-
+ 
 
 @app.callback(
     Output("modal", "is_open"),
@@ -153,8 +175,7 @@ def open_modal(selected_rows, _):
     # prevent_initial_call=True
     Output('table', 'data'),
     Input('dummy-input', 'value'),
-    prevent_initial_call=False,
-    allow_duplicate=True 
+    prevent_initial_call=False
 )
 
 def get_all_books_table(n):
@@ -177,34 +198,33 @@ def get_all_books_table(n):
 
     return []
 
-# @app.callback(
-#     Output('favorites-table', 'data'),
-#     Input('table', 'selected_rows'),
-#     prevent_initial_call=True,
-#     allow_duplicate=True 
-# )
+@app.callback(
+    Output('favorites-table', 'data'),
+    Input('table', 'selected_rows'),
+    prevent_initial_call=True
+)
 
-# def update_favorites(selected_rows):
-#     #global books_data  # Utilise la variable globale
+def update_favorites(selected_rows):
+    #global books_data  # Utilise la variable globale
 
-#     if not selected_rows:
-#         return dash.no_update
+    if not selected_rows:
+        return dash.no_update
 
-#     selected_books = [books_data[i] for i in selected_rows]
+    selected_books = [books_data[i] for i in selected_rows]
 
-#     for book in selected_books:
-#         usersbook = {
-#             "book_id": book["id"],
-#             "user_id": user_id
-#         }
+    for book in selected_books:
+        usersbook = {
+            "book_id": book["id"],
+            "user_id": username
+        }
 
-#         r = requests.post("http://api:5000/save_book/", json=usersbook)
+        r = requests.post("http://api:5000/save_book/", json=usersbook)
 
-#         if r.status_code == 409:
-#             print(f"Book {book['title']} already exists in the user's favorites.")
+        if r.status_code == 409:
+            print(f"Book {book['title']} already exists in the user's favorites.")
 
-#     r = requests.get(f"http://api:5000/users_books/{user_id}")
-#     return r.json()
+    r = requests.get(f"http://api:5000/users_books/{username}")
+    return r.json()
 
 
 
@@ -212,7 +232,6 @@ def get_all_books_table(n):
 #     Output('favorites-table', 'data'),
 #     Input('favorites-table', 'data_previous'),
 #     prevent_initial_call=False,
-#     allow_duplicate=True 
 # )
 # def delete_book_row(data_previous):
 #     if data_previous:
@@ -236,78 +255,6 @@ def get_all_books_table(n):
 #         # Make a request to the API or use your database deletion logic
 #         usersbook_id = str(book_id) + "_" + str(user_id)  
 #         requests.delete(f"http://api:5000/unfav_book/{usersbook_id}")
-
-@app.callback(
-    Output('favorites-table', 'data'),
-    Input('table', 'selected_rows'),
-    Input('favorites-table', 'data_previous'),
-    prevent_initial_call=True,
-    allow_duplicate=True 
-)
-
-def update_favorites(selected_rows, data_previous):
-    #global books_data  # Utilise la variable globale
-    ctx = dash.callback_context
-
-    if not ctx.triggered_id:
-        raise dash.exceptions.PreventUpdate
-
-    # Check which input triggered the callback
-    triggered_component_id = ctx.triggered_id.split(".")[0]
-
-
-    if triggered_component_id == "table":
-        # Logic for updating favorites
-        if not selected_rows:
-            return dash.no_update
-
-
-        selected_books = [books_data[i] for i in selected_rows]
-
-        for book in selected_books:
-            usersbook = {
-                "book_id": book["id"],
-                "user_id": user_id
-            }
-
-            r = requests.post("http://api:5000/save_book/", json=usersbook)
-
-            if r.status_code == 409:
-                print(f"Book {book['title']} already exists in the user's favorites.")
-
-        r = requests.get(f"http://api:5000/users_books/{user_id}")
-        return r.json()
-
-    elif triggered_component_id == "favorites-table":
-        # Logic for deleting a book row
-        if data_previous:
-            print("Deleting book row...")
-            deleted_row_index = find_deleted_row_index(data_previous)
-            if deleted_row_index is not None:
-                delete_book_from_usersbooks(data_previous[deleted_row_index])
-                data_previous.pop(deleted_row_index)
-                print("Updated Favorites after deletion:", data_previous)
-                return data_previous
-
-    return dash.no_update
-
-
-def find_deleted_row_index(data_previous):
-    ctx = dash.callback_context
-    for i, row in enumerate(data_previous):
-        if f"{ctx.triggered_id}.children" in ctx.triggered_id:
-            print("Found deleted row index:", i)
-            return i
-    return None
-
-def delete_book_from_usersbooks(deleted_row_data):
-    # Extract book ID from the row data and use it to delete the book from the usersbooks
-    book_id = deleted_row_data.get("id")
-    if book_id is not None:
-        # Make a request to the API or use your database deletion logic
-        usersbook_id = str(book_id) + "_" + str(user_id)  
-        requests.delete(f"http://api:5000/unfav_book/{usersbook_id}")
-        print(f"Deleted book with ID {book_id}")
 
 
 if __name__ == '__main__':
