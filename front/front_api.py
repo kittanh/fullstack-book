@@ -4,13 +4,24 @@ from dash import Dash, Input, Output, html, dcc, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_table
+import os
+import dash_auth
+from flask import request
+
+VALID_USERNAME_PASSWORD_PAIRS = [
+    ['user1', 'aaa'],
+    ['user2', 'bbb']
+]
+
 
 
 # Ajoute le thème Bootstrap pour l'apparence
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
 
-nom_user = "chatvoyou"
-user_id = "chatvoyou"
 
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     
@@ -18,7 +29,7 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
 
     html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold"}),
 
-    html.H3(children=f" Bienvenue {nom_user} !", style={'color': '#01756C', 'display': 'inline-block', 'margin-left': '20px'}),
+    html.H3(children="", id="user-output", style={'color': '#01756C', 'display': 'inline-block', 'margin-left': '20px'}),
 
     
     html.Div(style={'margin': '20px'}),
@@ -125,10 +136,21 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
             ],
             id="modal",
     ),
-
+    
 ])
+@app.callback(
+    Output(component_id='user-output', component_property='children'),
+    Input('dummy-input', 'value'),
+    prevent_initial_call=False
+)
+def update_output_div(n):
+    global username 
+    username = request.authorization['username']
+    user = {"id": username}
+    requests.post("http://api:5000/users/", json=user)
+    return f'Bienvenue {username} !'
 
-
+ 
 
 @app.callback(
     Output("modal", "is_open"),
@@ -153,8 +175,7 @@ def open_modal(selected_rows, _):
     # prevent_initial_call=True
     Output('table', 'data'),
     Input('dummy-input', 'value'),
-    prevent_initial_call=False,
-    allow_duplicate=True 
+    prevent_initial_call=False
 )
 
 def get_all_books_table(n):
@@ -177,34 +198,33 @@ def get_all_books_table(n):
 
     return []
 
-# @app.callback(
-#     Output('favorites-table', 'data'),
-#     Input('table', 'selected_rows'),
-#     prevent_initial_call=True,
-#     allow_duplicate=True 
-# )
+@app.callback(
+    Output('favorites-table', 'data'),
+    Input('table', 'selected_rows'),
+    prevent_initial_call=True
+)
 
-# def update_favorites(selected_rows):
-#     #global books_data  # Utilise la variable globale
+def update_favorites(selected_rows):
+    #global books_data  # Utilise la variable globale
 
-#     if not selected_rows:
-#         return dash.no_update
+    if not selected_rows:
+        return dash.no_update
 
-#     selected_books = [books_data[i] for i in selected_rows]
+    selected_books = [books_data[i] for i in selected_rows]
 
-#     for book in selected_books:
-#         usersbook = {
-#             "book_id": book["id"],
-#             "user_id": user_id
-#         }
+    for book in selected_books:
+        usersbook = {
+            "book_id": book["id"],
+            "user_id": username
+        }
 
-#         r = requests.post("http://api:5000/save_book/", json=usersbook)
+        r = requests.post("http://api:5000/save_book/", json=usersbook)
 
-#         if r.status_code == 409:
-#             print(f"Book {book['title']} already exists in the user's favorites.")
+        if r.status_code == 409:
+            print(f"Book {book['title']} already exists in the user's favorites.")
 
-#     r = requests.get(f"http://api:5000/users_books/{user_id}")
-#     return r.json()
+    r = requests.get(f"http://api:5000/users_books/{username}")
+    return r.json()
 
 
 
@@ -212,7 +232,6 @@ def get_all_books_table(n):
 #     Output('favorites-table', 'data'),
 #     Input('favorites-table', 'data_previous'),
 #     prevent_initial_call=False,
-#     allow_duplicate=True 
 # )
 # def delete_book_row(data_previous):
 #     if data_previous:

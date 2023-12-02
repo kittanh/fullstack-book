@@ -27,7 +27,7 @@ class Book(BaseModel):
 class User(BaseModel):
     id: str
     #email: str
-    password: str
+    # password: str
     class Config:
         orm_mode = True
 
@@ -84,7 +84,7 @@ class BooksDB(BaseSQL):
 class UserDB(BaseSQL):
     __tablename__ = "users"
     id = Column(String, primary_key=True)
-    password = Column(String, primary_key=False)
+    # password = Column(String, primary_key=False)
 
     users_books = relationship('UsersBookDB', back_populates='user')
 
@@ -126,7 +126,7 @@ def init_db():
 
 def init_user():
     db = SessionLocal()
-    new_user = UserDB(id="chatvoyou", password="Test")
+    new_user = UserDB(id="chatvoyou")
     db.add(new_user)
     db.commit()
 
@@ -198,7 +198,7 @@ async def get_book_by_id(id: int, db: Session = Depends(get_db)):
     return record
 
 @app.get("/users/{id}")
-async def get_user_by_id(id: int, db: Session = Depends(get_db)):
+async def get_user_by_id(id: str, db: Session = Depends(get_db)):
     record = db.query(UserDB).filter(UserDB.id == id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Not Found")
