@@ -233,6 +233,21 @@ async def get_book_with_avg_sup(avg_rate: float, db: Session =  Depends(get_db))
     records = db.query(BooksDB).filter(BooksDB.average_rating > avg_rate).all()
     return records
 
+@app.delete("/unfav_book/{id}", tags=["posts"])
+async def unfav_book(id: str, db: Session = Depends(get_db)):
+    book_id, user_id = id.split("_")
+    try:
+        num_rows = db.query(UsersBookDB).filter_by(UsersBookDB.book_id==book_id and UsersBookDB.user_id==user_id).delete()
+        if num_rows == 0:
+            raise HTTPException(status_code=404, detail="Record not found")
+        db.commit()
+    except HTTPException as e:
+        raise
+    except Exception as e:
+        return {"error": e}
+    return {"book": f"unfav book {id}"}
+        
+
 @app.delete("/delete/{id}", tags=["posts"])
 async def delete_by_id(id: int, db: Session = Depends(get_db)):
     try:
