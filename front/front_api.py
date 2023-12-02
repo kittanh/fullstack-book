@@ -170,9 +170,7 @@ def open_modal(selected_rows, _):
     return no_update, no_update
 
 @app.callback(
-    # Output('table', 'data'),
-    # Input("bouton_recherche", "n_clicks"),  
-    # prevent_initial_call=True
+
     Output('table', 'data'),
     Input('dummy-input', 'value'),
     prevent_initial_call=False
@@ -183,8 +181,7 @@ def get_all_books_table(n):
     retries = 0
 
     global books_data  # Utilise la variable globale
-    # r = requests.get("http://api:5000/all_books")
-    # books_data = r.json()
+
 
     while retries < max_retries:
         try:
@@ -197,64 +194,6 @@ def get_all_books_table(n):
             retries += 1
 
     return []
-
-@app.callback(
-    Output('favorites-table', 'data'),
-    Input('table', 'selected_rows'),
-    prevent_initial_call=True
-)
-
-def update_favorites(selected_rows):
-    #global books_data  # Utilise la variable globale
-
-    if not selected_rows:
-        return dash.no_update
-
-    selected_books = [books_data[i] for i in selected_rows]
-
-    for book in selected_books:
-        usersbook = {
-            "book_id": book["id"],
-            "user_id": username
-        }
-
-        r = requests.post("http://api:5000/save_book/", json=usersbook)
-
-        if r.status_code == 409:
-            print(f"Book {book['title']} already exists in the user's favorites.")
-
-    r = requests.get(f"http://api:5000/users_books/{username}")
-    return r.json()
-
-
-
-# @app.callback(
-#     Output('favorites-table', 'data'),
-#     Input('favorites-table', 'data_previous'),
-#     prevent_initial_call=False,
-# )
-# def delete_book_row(data_previous):
-#     if data_previous:
-#         deleted_row_index = find_deleted_row_index(data_previous, dash.callback_context.triggered_id)
-#         if deleted_row_index is not None:
-#             delete_book_from_usersbooks(data_previous[deleted_row_index])
-#             data_previous.pop(deleted_row_index)
-#             return data_previous
-#     return []
-
-# def find_deleted_row_index(data_previous, triggered_id):
-#     for i, row in enumerate(data_previous):
-#         if f"{app.callback_context.component_id}.children" in triggered_id:
-#             return i
-#     return None
-
-# def delete_book_from_usersbooks(deleted_row_data):
-#     # Extract book ID from the row data and use it to delete the book from the usersbooks
-#     book_id = deleted_row_data.get("id")
-#     if book_id is not None:
-#         # Make a request to the API or use your database deletion logic
-#         usersbook_id = str(book_id) + "_" + str(user_id)  
-#         requests.delete(f"http://api:5000/unfav_book/{usersbook_id}")
 
 @app.callback(
     Output('favorites-table', 'data'),
@@ -287,7 +226,7 @@ def update_favorites(selected_rows, data_previous, data_current):
         for book in selected_books:
             usersbook = {
                 "book_id": book["id"],
-                "user_id": user_id
+                "user_id": username
             }
 
             r = requests.post("http://api:5000/save_book/", json=usersbook)
@@ -295,7 +234,7 @@ def update_favorites(selected_rows, data_previous, data_current):
             if r.status_code == 409:
                 print(f"Book {book['title']} already exists in the user's favorites.")
 
-        r = requests.get(f"http://api:5000/users_books/{user_id}")
+        r = requests.get(f"http://api:5000/users_books/{username}")
         return r.json()
 
     elif triggered_component_id == "favorites-table":
@@ -316,20 +255,13 @@ def update_favorites(selected_rows, data_previous, data_current):
     return dash.no_update
 
 
-# def find_deleted_row_index(data_previous):
-#     ctx = dash.callback_context
-#     for i, row in enumerate(data_previous):
-#         if f"{ctx.triggered_id}.children" in ctx.triggered_id:
-#             print("Found deleted row index:", i)
-#             return i
-#     return None
+
 
 def delete_book_from_usersbooks(book_id):
-    # Extract book ID from the row data and use it to delete the book from the usersbooks
-    #book_id = deleted_row_data.get("id")
+
     if book_id is not None:
         # Make a request to the API or use your database deletion logic
-        usersbook_id = str(book_id) + "_" + str(user_id)  
+        usersbook_id = str(book_id) + "_" + str(username)  
         requests.delete(f"http://api:5000/unfav_book/{usersbook_id}")
         print(f"Deleted book with ID {book_id}")
 
