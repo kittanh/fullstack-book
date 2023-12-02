@@ -5,6 +5,7 @@ from dash import Dash, Input, Output, html, dcc, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_table
+import os
 
 
 app = dash.Dash(__name__)
@@ -15,17 +16,6 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.
 nom_user = "chatvoyou"
 user_id = 0
 
-def get_all_books_list():
-    try:
-        r = requests.get("http://localhost:5000/all_books")
-        r.raise_for_status()  # Raise an HTTPError for bad responses
-        books_list = r.json()
-        return books_list
-    except requests.exceptions.RequestException as e:
-        print(f"Error: {e}")
-        return None
-    
-books_data = get_all_books_list()
 
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold"}),
@@ -38,9 +28,12 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     html.Div(style={'margin': '20px'}),
 
     # DataTable pour afficher tous les livres
-    html.Button("Ajouter des livres à ma liste de lecture", id="bouton_recherche", n_clicks=0),
+    #html.Button("Ajouter des livres à ma liste de lecture", id="bouton_recherche", n_clicks=0),
 
     html.Div(style={'margin': '20px'}),
+
+    # Add the dummy input component
+    dcc.Input(id='dummy-input', value='', style={'display': 'none'}),
 
     dash_table.DataTable(
         id='table',
@@ -101,7 +94,7 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
         sort_mode="multi",
         row_deletable=True,
         column_selectable="single",
-        row_selectable="multi",
+        #row_selectable="multi",
         selected_columns=[],
         selected_rows=[],
         page_action="native",
@@ -158,38 +151,34 @@ def open_modal(selected_rows, _):
 
     return no_update, no_update
 
-<<<<<<< HEAD
-# @app.callback(
-#     Output('table', 'data'),
-#     Input("bouton_recherche", "n_clicks"),  
-#     prevent_initial_call=True
-# )
-
-# def get_all_books_table(n):
-#     global books_data  # Utilise la variable globale
-#     r = requests.get("http://api:5000/all_books")
-#     books_data = r.json()
-#     return books_data
-=======
 @app.callback(
+    # Output('table', 'data'),
+    # Input("bouton_recherche", "n_clicks"),  
+    # prevent_initial_call=True
     Output('table', 'data'),
-    Input("bouton_recherche", "n_clicks"),  
-    prevent_initial_call=True
+    Input('dummy-input', 'value'),
+    prevent_initial_call=False
 )
+
 def get_all_books_table(n):
-    global books_data  # Utilise la variable globale
-    r = requests.get("http://api:5000/all_books")
-    books_data = r.json()
-    return books_data
+    max_retries = 3
+    retries = 0
 
-def get_all_books_table():
     global books_data  # Utilise la variable globale
-    r = requests.get("http://api:5000/all_books")
-    books_data = r.json()
-    return books_data
+    # r = requests.get("http://api:5000/all_books")
+    # books_data = r.json()
 
-books = get_all_books_table()
->>>>>>> 6a765aa61c81e7876aac9b410b543b094138a2e8
+    while retries < max_retries:
+        try:
+            r = requests.get("http://api:5000/all_books")
+            r.raise_for_status()
+            books_data = r.json()
+            # Process the data as needed
+            return books_data
+        except requests.exceptions.RequestException:
+            retries += 1
+
+    return []
 
 @app.callback(
     Output('favorites-table', 'data'),
@@ -198,16 +187,7 @@ books = get_all_books_table()
 )
 
 def update_favorites(selected_rows):
-    global books_data  # Utilise la variable globale
-
-    # r = requests.get("http://api:5000/users_books/"+str(user_id))
-    # users_books = r.json()
-
-    # if not selected_rows:
-    #     return dash.no_update
-
-    # selected_books = [books_data[i] for i in selected_rows]
-    # return users_books + selected_books
+    #global books_data  # Utilise la variable globale
 
     if not selected_rows:
         return dash.no_update
@@ -228,63 +208,36 @@ def update_favorites(selected_rows):
     r = requests.get(f"http://api:5000/users_books/{user_id}")
     return r.json()
 
-"""
-@app.callback(
-    Output("output_post", "children"),
-    Input("post_button", "n_clicks"),
-    State("book_id", "value"),
-    State("book_title", "value"),
-    State("book_authors", "value"),
-    State("book_average_rating", "value"),
-    State("book_language_code", "value"),
-    State("book_num_pages", "value"),
-    State("book_rating_count", "value"),
-    State("book_review_count", "value"),
-    State("book_publication_date", "value"),
-    prevent_initial_call=True
-)
-def post_book(n, id, title, authors, average_rating, language_code, num_pages, rating_count,
-              review_count, publication_date):
-    r = requests.post("http://api:5000/books/",
-                      json={"id": id, "title": title, "authors": authors, "average_rating": average_rating,
-                            "language_code": language_code, "num_pages": num_pages,
-                            "rating_count": rating_count, "text_review_count": review_count,
-                            "publication_date": publication_date
-                            })
-    return str(r.json())
 
-@app.callback(
-    Output("output_delete", "children"),
-    Input("delete_all_button", "n_clicks"),
-    prevent_initial_call=True
-)
-def delete_all(n):
-    r = requests.delete("http://api:5000/delete_all")
-    return str(r.json())
-"""
-"""
-    html.Div([
-        dbc.Row([
-            dbc.Input(id="book_id", placeholder="ID du livre (int)"),
-            dbc.Input(id='book_title', placeholder="Titre du livre (str)"),
-            dbc.Input(id='book_authors', placeholder="Nom de l'auteur"),
-            dbc.Input(id='book_average_rating', placeholder="Note moyenne du livre (float)"),
-            dbc.Input(id='book_language_code', placeholder="Code de la langue du livre"),
-            dbc.Input(id='book_num_pages', placeholder="Nombre de pages (int)"),
-            dbc.Input(id='book_rating_count', placeholder="Nombre de notes (int)"),
-            dbc.Input(id='book_review_count', placeholder="Nombre de revues du livre (int)"),
-            dbc.Input(id='book_publication_date', placeholder="Date de publication du livre (int)"),
-        ]),
-        dbc.Button("POST", id="post_button", n_clicks=0),
-        html.H2(id="output_post"),
-        dbc.Button("GET_ALL_BOOKS", id="all_books_button", n_clicks=0),
-        html.H2(id="output_get"),
 
-        dbc.Button("DELETE_ALL_BOOKS", id="delete_all_button", n_clicks=0),
-        html.H2(id="output_delete"),
+# @app.callback(
+#     Output('favorites-table', 'data'),
+#     Input('favorites-table', 'data_previous'),
+#     prevent_initial_call=False,
+# )
+# def delete_book_row(data_previous):
+#     if data_previous:
+#         deleted_row_index = find_deleted_row_index(data_previous, dash.callback_context.triggered_id)
+#         if deleted_row_index is not None:
+#             delete_book_from_usersbooks(data_previous[deleted_row_index])
+#             data_previous.pop(deleted_row_index)
+#             return data_previous
+#     return []
 
-    ], style={'margin': '80px'})  # Ajoute de la marge à l'élément
-    """
+# def find_deleted_row_index(data_previous, triggered_id):
+#     for i, row in enumerate(data_previous):
+#         if f"{app.callback_context.component_id}.children" in triggered_id:
+#             return i
+#     return None
+
+# def delete_book_from_usersbooks(deleted_row_data):
+#     # Extract book ID from the row data and use it to delete the book from the usersbooks
+#     book_id = deleted_row_data.get("id")
+#     if book_id is not None:
+#         # Make a request to the API or use your database deletion logic
+#         usersbook_id = str(book_id) + "_" + str(user_id)  
+#         requests.delete(f"http://api:5000/unfav_book/{usersbook_id}")
+
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=8050)
