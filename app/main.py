@@ -25,9 +25,8 @@ class Book(BaseModel):
         orm_mode = True
 
 class User(BaseModel):
-    id: int
-    username: str
-    email: str
+    id: str
+    #email: str
     password: str
     class Config:
         orm_mode = True
@@ -84,9 +83,7 @@ class BooksDB(BaseSQL):
 
 class UserDB(BaseSQL):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True, primary_key=False)
-    email = Column(String, unique=True, primary_key=False)
+    id = Column(String, primary_key=True)
     password = Column(String, primary_key=False)
 
     users_books = relationship('UsersBookDB', back_populates='user')
@@ -100,8 +97,8 @@ class UsersBookDB(BaseSQL):
     __tablename__ = "users_books"
 
     book_id = Column(Integer, ForeignKey('books.id'), primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
-    personal_rating = Column(Integer, CheckConstraint('personal_rating >= 0 AND personal_rating <= 5'), nullable=True)
+    user_id = Column(String, ForeignKey('users.id'), primary_key=True)
+    #personal_rating = Column(Integer, CheckConstraint('personal_rating >= 0 AND personal_rating <= 5'), nullable=True)
     # status = Column(SQLAlchemyEnum(Status), nullable=True)
 
 
@@ -126,20 +123,17 @@ def init_db():
                 db.add(new_book)
                 db.commit()
 
-    new_user = UserDB(id=0, username="chatvoyou", email="chatvoyou@gmail.com", password="Test")
-    db.add(new_user)
-    db.commit()
 
 def init_user():
     db = SessionLocal()
-    new_user = UserDB(id=0, username="chatvoyou", email="chatvoyou@gmail.c om", password="Test")
+    new_user = UserDB(id="chatvoyou", password="Test")
     db.add(new_user)
     db.commit()
 
 def init_usersbooks():
     db = SessionLocal()
     for i in range (1,3):
-       db.add(UsersBookDB(book_id = i, user_id=0))
+       db.add(UsersBookDB(book_id = i, user_id="chatvoyou"))
        db.commit()
 
 
@@ -187,7 +181,7 @@ async def create_user(user: User, db: Session = Depends(get_db)):
 
 @app.post("/save_book/")
 async def save_book(usersbook: UsersBook, db: Session = Depends(get_db)):
-    record = db.query(UsersBookDB).filter(UsersBookDB.book_id == usersbook.book_id and UsersBookDB.user_id == usersbook.user_id).first()
+    record = db.query(UsersBookDB).filter((UsersBookDB.book_id == usersbook.book_id) & (UsersBookDB.user_id == usersbook.user_id)).first()
     if record:
         raise HTTPException(status_code=409, detail="Already exists")
     db_usersbook = UsersBookDB(**usersbook.dict())
@@ -235,16 +229,16 @@ async def get_book_with_avg_sup(avg_rate: float, db: Session =  Depends(get_db))
 
 @app.delete("/unfav_book/{id}", tags=["posts"])
 async def unfav_book(id: str, db: Session = Depends(get_db)):
-    book_id, user_id = id.split("_")
+    book_id, user_id = map(int, id.split("_"))
     try:
-        num_rows = db.query(UsersBookDB).filter_by(UsersBookDB.book_id==book_id and UsersBookDB.user_id==user_id).delete()
+        num_rows = db.query(UsersBookDB).filter_by(book_id=book_id, user_id=user_id).delete()
         if num_rows == 0:
             raise HTTPException(status_code=404, detail="Record not found")
         db.commit()
     except HTTPException as e:
         raise
     except Exception as e:
-        return {"error": e}
+        return {"error": str(e)}
     return {"book": f"unfav book {id}"}
         
 
