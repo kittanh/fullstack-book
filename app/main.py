@@ -229,7 +229,7 @@ async def get_book_with_avg_sup(avg_rate: float, db: Session =  Depends(get_db))
 
 @app.delete("/unfav_book/{id}", tags=["posts"])
 async def unfav_book(id: str, db: Session = Depends(get_db)):
-    book_id, user_id = map(int, id.split("_"))
+    book_id, user_id = map(str, id.split("_"))
     try:
         num_rows = db.query(UsersBookDB).filter_by(book_id=book_id, user_id=user_id).delete()
         if num_rows == 0:

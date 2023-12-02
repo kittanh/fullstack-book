@@ -241,11 +241,12 @@ def get_all_books_table(n):
     Output('favorites-table', 'data'),
     Input('table', 'selected_rows'),
     Input('favorites-table', 'data_previous'),
+    State('favorites-table', 'data'),
     prevent_initial_call=True,
     allow_duplicate=True 
 )
 
-def update_favorites(selected_rows, data_previous):
+def update_favorites(selected_rows, data_previous, data_current):
     #global books_data  # Utilise la variable globale
     ctx = dash.callback_context
 
@@ -282,27 +283,31 @@ def update_favorites(selected_rows, data_previous):
         # Logic for deleting a book row
         if data_previous:
             print("Deleting book row...")
-            deleted_row_index = find_deleted_row_index(data_previous)
-            if deleted_row_index is not None:
-                delete_book_from_usersbooks(data_previous[deleted_row_index])
-                data_previous.pop(deleted_row_index)
-                print("Updated Favorites after deletion:", data_previous)
-                return data_previous
+
+            book =  [i for i in data_previous if i not in data_current]
+            delete_book_from_usersbooks(book[0]["id"])
+            # book_id = book["id"]
+            # #find_deleted_row_index(data_previous)
+            # if book_id is not None:
+            #     delete_book_from_usersbooks(book_id)
+            #     data_previous.pop(book_id)
+            #     print("Updated Favorites after deletion:", data_previous)
+            #     return data_previous
 
     return dash.no_update
 
 
-def find_deleted_row_index(data_previous):
-    ctx = dash.callback_context
-    for i, row in enumerate(data_previous):
-        if f"{ctx.triggered_id}.children" in ctx.triggered_id:
-            print("Found deleted row index:", i)
-            return i
-    return None
+# def find_deleted_row_index(data_previous):
+#     ctx = dash.callback_context
+#     for i, row in enumerate(data_previous):
+#         if f"{ctx.triggered_id}.children" in ctx.triggered_id:
+#             print("Found deleted row index:", i)
+#             return i
+#     return None
 
-def delete_book_from_usersbooks(deleted_row_data):
+def delete_book_from_usersbooks(book_id):
     # Extract book ID from the row data and use it to delete the book from the usersbooks
-    book_id = deleted_row_data.get("id")
+    #book_id = deleted_row_data.get("id")
     if book_id is not None:
         # Make a request to the API or use your database deletion logic
         usersbook_id = str(book_id) + "_" + str(user_id)  
