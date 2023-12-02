@@ -213,7 +213,7 @@ async def get_all_books(db: Session = Depends(get_db)):
     return db.query(BooksDB).all()
 
 @app.get("/users_books/{user_id}")
-async def get_books_of_user(user_id: int, db: Session =  Depends(get_db)):
+async def get_books_of_user(user_id: str, db: Session =  Depends(get_db)):
     user_books = (
         db.query(BooksDB)
         .join(UsersBookDB)
