@@ -1,13 +1,11 @@
-
 import requests
 import dash
 from dash import Dash, Input, Output, html, dcc, ctx, no_update, callback
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_table
+from datetime import datetime
 
-
-app = dash.Dash(__name__)
 
 # Ajoute le thème Bootstrap pour l'apparence
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
@@ -15,32 +13,28 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.
 nom_user = "chatvoyou"
 user_id = 0
 
-def get_all_books_list():
-    try:
-        r = requests.get("http://localhost:5000/all_books")
-        r.raise_for_status()  # Raise an HTTPError for bad responses
-        books_list = r.json()
-        return books_list
-    except requests.exceptions.RequestException as e:
-        print(f"Error: {e}")
-        return None
-    
-books_data = get_all_books_list()
-
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
+    
+    html.Img(src='https://www.not-only-books.fr/wp-content/uploads/2023/02/livres-realisation-creation-externalisation-edition-812x1024.png',style={'width': '40px', 'float': 'left'}),
+
     html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold"}),
 
-    html.Div(style={'margin': '20px'}),
-
-    html.H3(children=f" Bienvenue {nom_user} !", style={'color': '#01756C'}),
+    html.H3(children=f" Bienvenue {nom_user} !", style={'color': '#01756C', 'display': 'inline-block', 'margin-left': '20px'}),
 
     
     html.Div(style={'margin': '20px'}),
 
     # DataTable pour afficher tous les livres
-    html.Button("Ajouter des livres à ma liste de lecture", id="bouton_recherche", n_clicks=0),
 
     html.Div(style={'margin': '20px'}),
+
+    dcc.Interval(
+    id="load_interval", 
+    n_intervals=0, 
+    max_intervals=0, 
+    interval=1
+    ),
+
 
     dash_table.DataTable(
         id='table',
@@ -160,15 +154,13 @@ def open_modal(selected_rows, _):
 
 @app.callback(
     Output('table', 'data'),
-    Input("bouton_recherche", "n_clicks"),  
-    prevent_initial_call=True
+    Input(component_id="load_interval", component_property="n_intervals"),
 )
-def get_all_books_table(n):
+def get_all_books_table(n_intervals):
     global books_data  # Utilise la variable globale
     r = requests.get("http://api:5000/all_books")
     books_data = r.json()
     return books_data
-
 
 @app.callback(
     Output('favorites-table', 'data'),
