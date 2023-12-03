@@ -31,6 +31,7 @@ $ cd chemin/de/votre/projet
 $ docker-compose build (si première fois)
 $ docker-compose up
 ```
+4. Pour une raison que nous n'avons pas indentifié, il est nécessaire de se connecter une première fois, puis de relancer les containers (docker-compose up) pour que les appels à l'API via le FRONT fonctionnent correctement.
 ## **Authentification**
 Pour accèder à l'application il faut premièrement se connecter.
 Il suffit d'appuyer sur le lien *CONNEXION* à l'adresse [localhost:8050](http://localhost:8050/). Si vous êtes déjà connecté, vous passez directement à l'application, sinon vous êtes redirigé vers un formulaire de Keycloak. Si vous n'avez pas de compte créé en un (le prénom, nom et email ne sont pas utilisés mais nécessaire à la création d'un compte) et vous êtes redirigé vers l'application.
