@@ -31,6 +31,9 @@ $ cd chemin/de/votre/projet
 $ docker-compose build (si première fois)
 $ docker-compose up
 ```
+## **Authentification**
+Pour accèder à l'application il faut premièrement se connecter.
+Il suffit d'appuyer sur le lien *CONNEXION* à l'adresse [localhost:8050](http://localhost:8050/). Si vous êtes déjà connecté, vous passez directement à l'application, sinon vous êtes redirigé vers un formulaire de Keycloak. Si vous n'avez pas de compte créé en un (le prénom, nom et email ne sont pas utilisés mais nécessaire à la création d'un compte) et vous êtes redirigé vers l'application.
 
 ## **Utilisation**
 L'utilisation de l'application se divise en trois tableaux distincts :
@@ -51,8 +54,9 @@ L'utilisation de l'application se divise en trois tableaux distincts :
 Cette structuration en trois tableaux permet la constitution de votre liste de lecture personnelle, et l'exploration des lectures d'autres utilisateurs.
 
 
-Vous pouvez accéder à l'API et au FRONT avec les liens suivants:
+Vous pouvez accéder à l'API, au FRONT et à KEYCLOAK avec les liens suivants:
 * API: [localhost:5000](http://localhost:5000/)
 * FRONT: [localhost:8050](http://localhost:8050/)
+* FRONT: [localhost:8080](http://localhost:8050/auth)
 
 
