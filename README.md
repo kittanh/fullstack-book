@@ -1,15 +1,15 @@
-# **Full-stack-book**
+# **BiblioTech**
 
 ## **Description générale**
 Au sein de l'unité d'études Fullstack, nous avons développé une application offrant aux utilisateurs la possibilité de rechercher des livres, de les intégrer à leur liste de lecture personnelle, et d'explorer les lectures partagées par d'autres utilisateurs. Notre architecture utilise des conteneurs Docker pour garantir une mise en œuvre efficace et cohérente. Ces conteneurs contiennent les composants suivants :
 
-* Base de données (BDD) : PostgreSQL, assurant une gestion robuste des données.
+* **Base de données (BDD)** : PostgreSQL, assurant une gestion robuste des données.
 
-* Keycloak : Un système d'authentification sécurisé, facilitant la gestion des accès à l'application.
+* **Keycloak** : Un système d'authentification sécurisé, facilitant la gestion des accès à l'application.
 
-* API : FastAPI, fournissant une interface rapide et performante pour la communication avec la base de données.
+* **API** : FastAPI, fournissant une interface rapide et performante pour la communication avec la base de données.
 
-* Application Frontend : Développée avec le framework Dash, offrant une expérience utilisateur interactive pour la recherche, l'ajout de livres à la liste de lecture, et la visualisation des lectures des autres utilisateurs.
+* **Application Frontend** : Développée avec le framework Dash, offrant une expérience utilisateur interactive pour la recherche, l'ajout de livres à la liste de lecture, et la visualisation des lectures des autres utilisateurs.
 
 ## **Données utilisées**
 
