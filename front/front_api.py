@@ -209,7 +209,7 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
                         }
                     ],
                 ),
-            ]), width=9  # Adjust the width as needed
+            ]), width=8  # Adjust the width as needed
         ),
     ]),
 
@@ -280,16 +280,18 @@ def get_all_books_table(n):
 
     return []
 
+
 @app.callback(
     Output('favorites-table', 'data'),
-    Input('table', 'selected_rows'),
-    Input('favorites-table', 'data_previous'),
-    State('favorites-table', 'data'),
+    [#Input('dummy-input', 'value'),
+     Input('table', 'selected_rows'),
+     Input('favorites-table', 'data_previous')],
+    [State('favorites-table', 'data')],
     prevent_initial_call=True,
     allow_duplicate=True 
 )
 
-def update_favorites(selected_rows, data_previous, data_current):
+def update_favorites(selected_rows, data_previous, data_current): #value,
     #global books_data  # Utilise la variable globale
     ctx = dash.callback_context
 
@@ -299,12 +301,15 @@ def update_favorites(selected_rows, data_previous, data_current):
     # Check which input triggered the callback
     triggered_component_id = ctx.triggered_id.split(".")[0]
 
-
+    # if triggered_component_id == "dummy-input":
+    #     r = requests.get(f"http://api:5000/users_books/{username}")
+    #     return r.json()
+    
     if triggered_component_id == "table":
         # Logic for updating favorites
         if not selected_rows:
             return dash.no_update
-
+        
 
         selected_books = [books_data[i] for i in selected_rows]
 
