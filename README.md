@@ -41,6 +41,7 @@ L'utilisation de l'application se divise en trois tableaux distincts :
 **1. Tableau Principal (Tous les Livres)** :
   * Affiche l'ensemble des livres disponibles.
   * Permet une recherche aisée par noms ou auteurs.
+  * Permet de trier les livres par notes
   * C'est ici que vous sélectionnez les livres que vous souhaitez ajouter à votre liste de lecture.
 
 **2. Tableau de la liste de lecture personnelle** :
