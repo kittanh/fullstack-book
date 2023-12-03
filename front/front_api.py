@@ -12,7 +12,7 @@ from keycloak.keycloak_openid import KeycloakOpenID
 import time
 
 ######################on attend que keycloak soit lancé##########
-def wait_for_keycloak(keycloak_url, timeout=240):
+def wait_for_keycloak(keycloak_url, timeout=600):
     start_time = time.time()
     while True:
         try:
@@ -21,6 +21,7 @@ def wait_for_keycloak(keycloak_url, timeout=240):
 
             if response.status_code == 200:
                 print("Keycloak is ready!")
+                time.sleep(5)
                 break
         except requests.exceptions.RequestException as e:
             # Ignorer les erreurs de connexion pendant l'attente
