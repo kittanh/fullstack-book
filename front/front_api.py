@@ -117,16 +117,14 @@ def logout():
     if oidc.user_loggedin:
         session.clear()
         oidc.logout()
-        r = requests.get("http://host.docker.internal:8080/auth/realms/app_realm/protocol/openid-connect/logout")
-        r.raise_for_status()
-        return'Tu as été déconnecté <a href="/"> RETOUR AU LOGIN</a>'
+        return'<a href="http://host.docker.internal:8080/auth/realms/app_realm/protocol/openid-connect/logout" target="_blank">Déconnecte toi ici</a>' + '\n'+ '<a href="/"> RETOUR AU LOGIN</a>'
     else:
         return"Tu n'étais pas connecté <a href=\"/\"> RETOUR AU LOGIN</a>"
 
 @server.route("/dash")
 @oidc.require_login
 def show_dash():
-    return app.index() +'\nPrivate ici, <a href="/disconnect"> DECONNEXION</a>'
+    return app.index() +'\nPour se déconnecter, <a href="/disconnect"> DECONNEXION</a>'
 
 
 # Ajoute le thème Bootstrap pour l'apparence
