@@ -26,7 +26,7 @@ $ git clone https://github.com/ton-utilisateur/ton-projet.git
 ```
 $ cd chemin/de/votre/projet
 ```
-3. Construisez et lancez les conteneurs Docker de l'API, la base de données, et du front-end :
+3. Construisez et lancez les conteneurs Docker de l'API, keycloak, la base de données, et du front-end :
 ```
 $ docker-compose build (si première fois)
 $ docker-compose up
@@ -41,6 +41,7 @@ L'utilisation de l'application se divise en trois tableaux distincts :
 **1. Tableau Principal (Tous les Livres)** :
   * Affiche l'ensemble des livres disponibles.
   * Permet une recherche aisée par noms ou auteurs.
+  * Permet de trier les livres par notes
   * C'est ici que vous sélectionnez les livres que vous souhaitez ajouter à votre liste de lecture.
 
 **2. Tableau de la liste de lecture personnelle** :
