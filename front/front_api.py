@@ -109,6 +109,7 @@ def show_dash():
 app = dash.Dash(server=server, routes_pathname_prefix="/dash/", add_log_handler=True,
                 external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
 
+rating_data = [{'average_rating': i} for i in range(0, 6)]
 
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     
@@ -130,6 +131,7 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
             {'name': 'ID', 'id': 'id'},
             {'name': 'Titre', 'id': 'title'},
             {'name': 'Auteur', 'id': 'authors'},
+            {'name': 'Note', 'id': 'average_rating'},
             # Ajoute d'autres colonnes en fonction de tes besoins
         ],
         #editable=True,
@@ -147,7 +149,9 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
                 'backgroundColor': '#01756C',
                 'color': 'white',
                 'fontSize': '13px',
-                'textAlign': 'left'
+                'textAlign': 'left',
+                'overflow': 'hidden',  # Masquer le contenu dépassant de la cellule
+                'textOverflow': 'ellipsis',
             },
         style_header={'backgroundColor': '#01756C'},
 
@@ -166,8 +170,48 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
         ],
     ),
 
-    
+
+    html.Div(style={'width': '30%', 'padding': '20px'}, children=[
+            dash_table.DataTable(
+                id='rating-table',
+                data=rating_data,
+                columns=[
+                    {'name': 'Livres notés plus de ', 'id': 'average_rating'}
+                ],
+                filter_action="native",
+                sort_action="native",
+                sort_mode="multi",
+                row_selectable="single",
+                column_selectable="single",
+                selected_columns=[],
+                selected_rows=[0],
+                page_action="native",
+                page_current=0,
+                page_size=10,
+                style_cell={
+                    'backgroundColor': '#01756C',
+                    'color': 'white',
+                    'fontSize': '13px',
+                    'textAlign': 'left'
+                },
+                style_filter={
+                    'backgroundColor': '#EDF8F8',
+                },
+                style_data_conditional=[
+                    {
+                        'if': {'state': 'selected'},
+                        'backgroundColor': '#01756C',
+                        'color': '#3C3C3C',
+                        'border': '1px solid #01756C',
+                        'textAlign': 'left',
+                    }
+                ],
+            ),
+        ]), #width=3  # Adjust the width as needed
+
+
     html.Div(style={'margin': '20px'}),
+
 
     html.H4(children="Votre liste de lecture ", style={'color': '#01756C', 'margin-left': '10px'}),
 
@@ -197,7 +241,9 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
                 'backgroundColor': '#01756C',
                 'color': 'white',
                 'fontSize': '13px',
-                'textAlign': 'left'
+                'textAlign': 'left',
+                'overflow': 'hidden',  # Masquer le contenu dépassant de la cellule
+                'textOverflow': 'ellipsis',
             },
 
         style_filter={
@@ -217,9 +263,10 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     html.Div(style={'margin': '20px'}),
 
     html.H4(children="Consultez les lectures des autres utilisateurs", style={'color': '#01756C', 'margin-left': '10px'}),
+
     dbc.Row([
         dbc.Col(
-            html.Div(style={'width': '100%'}, children=[
+            html.Div(style={'width': '100%', 'padding': '20px', 'float': 'right'}, children=[
                 dash_table.DataTable(
                     id='users-table',
                     columns=[
@@ -279,7 +326,9 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
                         'backgroundColor': '#01756C',
                         'color': 'white',
                         'fontSize': '13px',
-                        'textAlign': 'left'
+                        'textAlign': 'left',
+                        'overflow': 'hidden',  # Masquer le contenu dépassant de la cellule
+                        'textOverflow': 'ellipsis',
                     },
                     style_filter={
                         'backgroundColor': '#EDF8F8',
@@ -294,7 +343,7 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
                         }
                     ],
                 ),
-            ]), width=8  # Adjust the width as needed
+            ]), width=9  # Adjust the width as needed
         ),
     ]),
 
@@ -342,20 +391,24 @@ def open_modal(selected_rows, _):
 @app.callback(
 
     Output('table', 'data'),
-    Input('dummy-input', 'value'),
+    #Input('dummy-input', 'value'),
+    Input('rating-table', 'selected_rows'),
     prevent_initial_call=False
 )
 
-def get_all_books_table(n):
+def get_all_books_table(selected_rows):
+    
     max_retries = 3
     retries = 0
 
     global books_data  # Utilise la variable globale
 
-
+    avg_rating = selected_rows[0]
     while retries < max_retries:
         try:
-            r = requests.get("http://host.docker.internal:5000/all_books")
+            # r = requests.get("http://api:5000/all_books")
+            
+            r = requests.get(f"http://host.docker.internal:5000/books_avg_sup/{avg_rating}")
             r.raise_for_status()
             books_data = r.json()
             # Process the data as needed

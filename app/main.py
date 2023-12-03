@@ -225,7 +225,7 @@ async def get_books_of_user(user_id: str, db: Session =  Depends(get_db)):
 
 @app.get("/books_avg_sup/{avg_rate}")
 async def get_book_with_avg_sup(avg_rate: float, db: Session =  Depends(get_db)):
-    records = db.query(BooksDB).filter(BooksDB.average_rating > avg_rate).all()
+    records = db.query(BooksDB).filter(BooksDB.average_rating >= avg_rate).all()
     return records
 
 @app.delete("/unfav_book/{id}", tags=["posts"])
