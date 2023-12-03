@@ -49,12 +49,12 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
             {'name': 'Auteur', 'id': 'authors'},
             # Ajoute d'autres colonnes en fonction de tes besoins
         ],
-        editable=True,
+        #editable=True,
         filter_action="native",
         sort_action="native",
         sort_mode="multi",
         column_selectable="single",
-        row_selectable="multi",
+        row_selectable="single",
         selected_columns=[],
         selected_rows=[],
         page_action="native",
@@ -93,8 +93,10 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
             {'name': 'ID', 'id': 'id'},
             {'name': 'Titre', 'id': 'title'},
             {'name': 'Auteur', 'id': 'authors'},
+            # {'name': 'Statut', 'id': 'status'},
+            # {'name': 'Note', 'id': 'personal_rating'}
         ],
-        editable=True,
+        #editable=True,
         filter_action="native",
         sort_action="native",
         sort_mode="multi",
@@ -126,6 +128,89 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
         }
         ],
     ),
+
+    html.Div(style={'margin': '20px'}),
+
+    dbc.Row([
+        dbc.Col(
+            html.Div(style={'width': '100%', 'padding': '20px'}, children=[
+                dash_table.DataTable(
+                    id='users-table',
+                    columns=[
+                        {'name': 'Utilisateur', 'id': 'id'}
+                    ],
+                    filter_action="native",
+                    sort_action="native",
+                    sort_mode="multi",
+                    row_selectable="single",
+                    column_selectable="single",
+                    selected_columns=[],
+                    selected_rows=[],
+                    page_action="native",
+                    page_current=0,
+                    page_size=10,
+                    style_cell={
+                        'backgroundColor': '#01756C',
+                        'color': 'white',
+                        'fontSize': '13px',
+                        'textAlign': 'left'
+                    },
+                    style_filter={
+                        'backgroundColor': '#EDF8F8',
+                    },
+                    style_data_conditional=[
+                        {
+                            'if': {'state': 'selected'},
+                            'backgroundColor': '#01756C',
+                            'color': '#3C3C3C',
+                            'border': '1px solid #01756C',
+                            'textAlign': 'left',
+                        }
+                    ],
+                ),
+            ]), width=3  # Adjust the width as needed
+        ),
+
+        dbc.Col(
+            html.Div(style={'width': '100%', 'padding': '20px', 'float': 'right'}, children=[
+                dash_table.DataTable(
+                    id='usersbooks-table',
+                    columns=[
+                        {'name': 'ID', 'id': 'id'},
+                        {'name': 'Titre', 'id': 'title'},
+                        {'name': 'Auteur', 'id': 'authors'},
+                    ],
+                    filter_action="native",
+                    sort_action="native",
+                    sort_mode="multi",
+                    column_selectable="single",
+                    selected_columns=[],
+                    selected_rows=[],
+                    page_action="native",
+                    page_current=0,
+                    page_size=10,
+                    style_cell={
+                        'backgroundColor': '#01756C',
+                        'color': 'white',
+                        'fontSize': '13px',
+                        'textAlign': 'left'
+                    },
+                    style_filter={
+                        'backgroundColor': '#EDF8F8',
+                    },
+                    style_data_conditional=[
+                        {
+                            'if': {'state': 'selected'},
+                            'backgroundColor': '#01756C',
+                            'color': '#3C3C3C',
+                            'border': '1px solid #01756C',
+                            'textAlign': 'left',
+                        }
+                    ],
+                ),
+            ]), width=9  # Adjust the width as needed
+        ),
+    ]),
 
     dbc.Modal(
             [
@@ -242,19 +327,12 @@ def update_favorites(selected_rows, data_previous, data_current):
             print("Deleting book row...")
 
             book =  [i for i in data_previous if i not in data_current]
-            delete_book_from_usersbooks(book[0]["id"])
-            # book_id = book["id"]
-            # #find_deleted_row_index(data_previous)
-            # if book_id is not None:
-            #     delete_book_from_usersbooks(book_id)
-            #     data_previous.pop(book_id)
-            #     print("Updated Favorites after deletion:", data_previous)
-            #     return data_previous
+            if book is not None:
+                delete_book_from_usersbooks(book[0]["id"])
+                # data_previous.pop(book)
+                # return data_previous
 
     return dash.no_update
-
-
-
 
 def delete_book_from_usersbooks(book_id):
 
@@ -263,6 +341,43 @@ def delete_book_from_usersbooks(book_id):
         usersbook_id = str(book_id) + "_" + str(username)  
         requests.delete(f"http://api:5000/unfav_book/{usersbook_id}")
         print(f"Deleted book with ID {book_id}")
+
+@app.callback(
+
+    Output('users-table', 'data'),
+    Input('dummy-input', 'value'),
+    prevent_initial_call=False
+)
+
+def get_all_users_table(n):
+    global users_data
+    max_retries = 3
+    retries = 0
+    while retries < max_retries:
+        try:
+            r = requests.get("http://api:5000/all_users")
+            r.raise_for_status()
+            users_data = r.json()
+            # Process the data as needed
+            return users_data
+        except requests.exceptions.RequestException:
+            retries += 1
+
+    return []
+
+
+@app.callback(
+    Output('usersbooks-table', 'data'),
+    Input('users-table', 'selected_rows'),
+    prevent_initial_call=True,
+    allow_duplicate=True 
+)
+
+def update_favorites(selected_rows):
+    user_id = [users_data[i] for i in selected_rows][0]["id"]
+    r = requests.get(f"http://api:5000/users_books/{user_id}")
+    r.raise_for_status()
+    return r.json()
 
 
 if __name__ == '__main__':

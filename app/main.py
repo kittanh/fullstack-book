@@ -10,6 +10,7 @@ from fastapi import HTTPException, Depends
 from sqlalchemy.orm import relationship, joinedload
 from enum import Enum
 from sqlalchemy import Enum as SQLAlchemyEnum
+from typing import List
 
 class Book(BaseModel):
     id: int
@@ -39,8 +40,8 @@ class User(BaseModel):
 class UsersBook(BaseModel):
     book_id: int
     user_id: str
-    # personal_rating: conint(ge=0, le=5)
-    # status: Status
+    # personal_rating: int
+    # status: str
 
     class Config:
         orm_mode = True
@@ -98,8 +99,8 @@ class UsersBookDB(BaseSQL):
 
     book_id = Column(Integer, ForeignKey('books.id'), primary_key=True)
     user_id = Column(String, ForeignKey('users.id'), primary_key=True)
-    #personal_rating = Column(Integer, CheckConstraint('personal_rating >= 0 AND personal_rating <= 5'), nullable=True)
-    # status = Column(SQLAlchemyEnum(Status), nullable=True)
+    # personal_rating = Column(Integer, nullable=True) #CheckConstraint('personal_rating >= 0 AND personal_rating <= 5'),
+    # status = Column(String, nullable=True) #SQLAlchemyEnum(Status)
 
 
 
@@ -133,7 +134,7 @@ def init_user():
 def init_usersbooks():
     db = SessionLocal()
     for i in range (1,3):
-       db.add(UsersBookDB(book_id = i, user_id="chatvoyou"))
+       db.add(UsersBookDB(book_id = i, user_id="user1", personal_rating="4", status="Read"))
        db.commit()
 
 
@@ -153,9 +154,9 @@ async def startup_event():
     BaseSQL.metadata.create_all(bind=engine)
     if not SessionLocal().query(BooksDB).first():
         init_db()
-    if not SessionLocal().query(UserDB).first():
-        init_user()
-        init_usersbooks()
+    # if not SessionLocal().query(UserDB).first():
+    #     init_user()
+    #     init_usersbooks()
 
 @app.post("/books/", response_model=Book)
 async def create_book(book: Book, db: Session = Depends(get_db)):
@@ -212,10 +213,10 @@ async def get_all_users(db: Session = Depends(get_db)):
 async def get_all_books(db: Session = Depends(get_db)):
     return db.query(BooksDB).all()
 
-@app.get("/users_books/{user_id}")
+@app.get("/users_books/{user_id}") #, response_model=List[UsersBook]
 async def get_books_of_user(user_id: str, db: Session =  Depends(get_db)):
     user_books = (
-        db.query(BooksDB)
+        db.query(BooksDB) #, UsersBookDB.status, UsersBookDB.personal_rating
         .join(UsersBookDB)
         .filter(UsersBookDB.user_id == user_id)
         .all()
