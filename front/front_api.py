@@ -5,22 +5,109 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_table
 import os
-import dash_auth
-from flask import request
+from os.path import join, dirname, realpath
+from flask import Flask, session
+from flask_oidc import OpenIDConnect
+from keycloak.keycloak_openid import KeycloakOpenID
 
-VALID_USERNAME_PASSWORD_PAIRS = [
-    ['user1', 'aaa'],
-    ['user2', 'bbb']
-]
+##########A ne faire que lors du premier appel#########################
+keycloak_url = "http://host.docker.internal:8080/auth"
+admin_username = "admin"
+admin_password = "admin"
 
+# Obtain an admin access token
+token_url = f"{keycloak_url}/realms/master/protocol/openid-connect/token"
+token_data = {
+    "grant_type": "password",
+    "client_id": "admin-cli",
+    "username": admin_username,
+    "password": admin_password,
+}
+token_response = requests.post(token_url, data=token_data)
+token_response.raise_for_status()
+admin_access_token = token_response.json()["access_token"]
+headers = {
+    "Authorization": f"Bearer {admin_access_token}",
+    "Content-Type": "application/json",
+}
+
+# Create a new realm
+def create_realm(realm_name):
+    realm_url = f"{keycloak_url}/admin/realms"
+    realm_data = {
+        "realm": realm_name,
+        "enabled": True,
+        "displayName": realm_name,
+        "registrationAllowed": True
+    }
+    requests.post(realm_url, headers=headers, json=realm_data)
+
+# Create a new client in the realm
+def create_client(client_name, realm_name, url):
+    client_url = f"{keycloak_url}/admin/realms/{realm_name}/clients"
+    client_data = { 
+        "id": client_name,
+        "clientId": client_name,
+        "protocol": "openid-connect",
+        "publicClient": False,
+        "directAccessGrantsEnabled": True,
+        "redirectUris": [url],
+        "clientAuthenticatorType": "client-secret",
+        "secret": "MyOwnSecret"
+    }
+    requests.post(client_url, headers=headers, json=client_data)
+    
+
+if requests.get(f"{keycloak_url}/admin/realms/app_realm", headers=headers).json()=={'error': 'Realm not found.'}:
+    create_realm("app_realm")
+    create_client("Front", "app_realm", "http://localhost:8050*")
+###################################
+
+UPLOADS_PATH = join(dirname(realpath(__file__)), 'client_secrets.json')
+
+server = Flask(__name__)
+
+server.config.update({
+    'SECRET_KEY': 'SomethingNotEntirelySecret',
+    'TESTING': True,
+    'DEBUG': True,
+    'OIDC_CLIENT_SECRETS': UPLOADS_PATH,
+    'OIDC_OPENID_REALM': 'app_realm',
+    'OIDC_SCOPES': ['openid'],
+    'OIDC_INTROSPECTION_AUTH_METHOD': 'client_secret_post'
+})
+
+keycloak_openid = KeycloakOpenID(server_url=keycloak_url,
+                                 client_id="Front",
+                                 realm_name="app_realm",
+                                 client_secret_key="MyOwnSecret")
+
+oidc = OpenIDConnect(server)
+
+@server.route("/")
+def public_la():
+    return 'Bonjour veuillez vous connecter, <a href="/dash"> CONNEXION</a>'
+
+@server.route("/disconnect")
+def logout():
+    if oidc.user_loggedin:
+        session.clear()
+        oidc.logout()
+        r = requests.get("http://host.docker.internal:8080/auth/realms/app_realm/protocol/openid-connect/logout")
+        r.raise_for_status()
+        return'Tu as été déconnecté <a href="/"> RETOUR AU LOGIN</a>'
+    else:
+        return"Tu n'étais pas connecté <a href=\"/\"> RETOUR AU LOGIN</a>"
+
+@server.route("/dash")
+@oidc.require_login
+def show_dash():
+    return app.index() +'\nPrivate ici, <a href="/disconnect"> DECONNEXION</a>'
 
 
 # Ajoute le thème Bootstrap pour l'apparence
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
-auth = dash_auth.BasicAuth(
-    app,
-    VALID_USERNAME_PASSWORD_PAIRS
-)
+app = dash.Dash(server=server, routes_pathname_prefix="/dash/", add_log_handler=True,
+                external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.SPACELAB])
 
 
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
@@ -228,10 +315,10 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
 )
 def update_output_div(n):
     global username 
-    username = request.authorization['username']
+    username = oidc.user_getfield('preferred_username')
     user = {"id": username}
-    requests.post("http://api:5000/users/", json=user)
-    return f'Bienvenue {username} '
+    requests.post("http://host.docker.internal:5000/users/", json=user)
+    return f'Bienvenue {username} !'
 
  
 
@@ -268,7 +355,7 @@ def get_all_books_table(n):
 
     while retries < max_retries:
         try:
-            r = requests.get("http://api:5000/all_books")
+            r = requests.get("http://host.docker.internal:5000/all_books")
             r.raise_for_status()
             books_data = r.json()
             # Process the data as needed
@@ -317,12 +404,12 @@ def update_favorites(selected_rows, data_previous, data_current): #value,
                 "user_id": username
             }
 
-            r = requests.post("http://api:5000/save_book/", json=usersbook)
+            r = requests.post("http://host.docker.internal:5000/save_book/", json=usersbook)
 
             if r.status_code == 409:
                 print(f"Book {book['title']} already exists in the user's favorites.")
 
-        r = requests.get(f"http://api:5000/users_books/{username}")
+        r = requests.get(f"http://host.docker.internal:5000/users_books/{username}")
         return r.json()
 
     elif triggered_component_id == "favorites-table":
@@ -343,7 +430,7 @@ def delete_book_from_usersbooks(book_id):
     if book_id is not None:
         # Make a request to the API or use your database deletion logic
         usersbook_id = str(book_id) + "_" + str(username)  
-        requests.delete(f"http://api:5000/unfav_book/{usersbook_id}")
+        requests.delete(f"http://host.docker.internal:5000/unfav_book/{usersbook_id}")
         print(f"Deleted book with ID {book_id}")
 
 @app.callback(
@@ -359,7 +446,7 @@ def get_all_users_table(n):
     retries = 0
     while retries < max_retries:
         try:
-            r = requests.get("http://api:5000/all_users")
+            r = requests.get("http://host.docker.internal:5000/all_users")
             r.raise_for_status()
             users_data = r.json()
             # Process the data as needed
@@ -379,10 +466,10 @@ def get_all_users_table(n):
 
 def update_favorites(selected_rows):
     user_id = [users_data[i] for i in selected_rows][0]["id"]
-    r = requests.get(f"http://api:5000/users_books/{user_id}")
+    r = requests.get(f"http://host.docker.internal:5000/users_books/{user_id}")
     r.raise_for_status()
     return r.json()
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=8050)
+    server.run(debug=True, host="0.0.0.0", port=8050)

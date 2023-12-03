@@ -2,5 +2,6 @@ requests
 dash
 dash_bootstrap_components
 dash_ag_grid
-dash_auth
 flask
+flask-oidc
+python-keycloak
