@@ -25,21 +25,16 @@ auth = dash_auth.BasicAuth(
 
 app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     
-    html.Img(src='https://www.not-only-books.fr/wp-content/uploads/2023/02/livres-realisation-creation-externalisation-edition-812x1024.png',style={'width': '40px', 'float': 'left'}),
-
-    html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold"}),
-
-    html.H3(children="", id="user-output", style={'color': '#01756C', 'display': 'inline-block', 'margin-left': '20px'}),
-
+    html.Div(style={'display': 'flex', 'alignItems': 'center'}, children=[
+        html.Img(src='https://www.not-only-books.fr/wp-content/uploads/2023/02/livres-realisation-creation-externalisation-edition-812x1024.png', style={'width': '40px', 'float': 'left'}),
+        html.H1(children=" BiblioTech", style={'color': '#01756C', "font-weight": "bold", 'margin-left': '10px'}),
+        html.H4(children="", id="user-output", style={'color': '#01756C', 'margin-left': 'auto'}),
+    ]),
     
     html.Div(style={'margin': '20px'}),
+    
+    html.H4(children="Recherchez vos prochaines lectures ", style={'color': '#01756C', 'margin-left': '10px'}),
 
-    # DataTable pour afficher tous les livres
-    #html.Button("Ajouter des livres à ma liste de lecture", id="bouton_recherche", n_clicks=0),
-
-    html.Div(style={'margin': '20px'}),
-
-    # Add the dummy input component
     dcc.Input(id='dummy-input', value='', style={'display': 'none'}),
 
     dash_table.DataTable(
@@ -87,6 +82,8 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     
     html.Div(style={'margin': '20px'}),
 
+    html.H4(children="Votre liste de lecture ", style={'color': '#01756C', 'margin-left': '10px'}),
+
     # DataTable pour afficher les favoris
     dash_table.DataTable(
         id='favorites-table',
@@ -132,9 +129,10 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
 
     html.Div(style={'margin': '20px'}),
 
+    html.H4(children="Consultez les lectures des autres utilisateurs", style={'color': '#01756C', 'margin-left': '10px'}),
     dbc.Row([
         dbc.Col(
-            html.Div(style={'width': '100%', 'padding': '20px'}, children=[
+            html.Div(style={'width': '100%'}, children=[
                 dash_table.DataTable(
                     id='users-table',
                     columns=[
@@ -233,7 +231,7 @@ def update_output_div(n):
     username = request.authorization['username']
     user = {"id": username}
     requests.post("http://api:5000/users/", json=user)
-    return f'Bienvenue {username} !'
+    return f'Bienvenue {username} '
 
  
 
