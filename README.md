@@ -26,7 +26,7 @@ $ git clone https://github.com/ton-utilisateur/ton-projet.git
 ```
 $ cd chemin/de/votre/projet
 ```
-3. Construisez et lancez les conteneurs Docker de l'API, la base de données, et du front-end :
+3. Construisez et lancez les conteneurs Docker de l'API, keycloak, la base de données, et du front-end :
 ```
 $ docker-compose build (si première fois)
 $ docker-compose up
