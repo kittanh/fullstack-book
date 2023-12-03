@@ -9,6 +9,30 @@ from os.path import join, dirname, realpath
 from flask import Flask, session
 from flask_oidc import OpenIDConnect
 from keycloak.keycloak_openid import KeycloakOpenID
+import time
+
+######################on attend que keycloak soit lancé##########
+def wait_for_keycloak(keycloak_url, timeout=120):
+    start_time = time.time()
+    while True:
+        try:
+            response = requests.get(f"{keycloak_url}/realms/master", timeout=5)
+            response.raise_for_status()
+
+            if response.status_code == 200:
+                print("Keycloak is ready!")
+                break
+        except requests.exceptions.RequestException as e:
+            # Ignorer les erreurs de connexion pendant l'attente
+            print(f"Keycloak n'est pas encore prêt. Attente... ({e})")
+
+        time.sleep(1)
+
+        if time.time() - start_time >= timeout:
+            print("Timeout waiting for Keycloak.")
+            break
+wait_for_keycloak("http://host.docker.internal:8080/auth")
+########################################################################
 
 ##########A ne faire que lors du premier appel#########################
 keycloak_url = "http://host.docker.internal:8080/auth"
