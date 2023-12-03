@@ -35,7 +35,6 @@ app.layout = html.Div(style={'backgroundColor': '#EDF8F8'}, children=[
     html.Div(style={'margin': '20px'}),
 
     # DataTable pour afficher tous les livres
-    #html.Button("Ajouter des livres à ma liste de lecture", id="bouton_recherche", n_clicks=0),
 
     html.Div(style={'margin': '20px'}),
 
