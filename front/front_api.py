@@ -12,7 +12,7 @@ from keycloak.keycloak_openid import KeycloakOpenID
 import time
 
 ######################on attend que keycloak soit lancé##########
-def wait_for_keycloak(keycloak_url, timeout=120):
+def wait_for_keycloak(keycloak_url, timeout=240):
     start_time = time.time()
     while True:
         try:
