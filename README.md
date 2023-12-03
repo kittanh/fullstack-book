@@ -13,7 +13,7 @@ Au sein de l'unité d'études Fullstack, nous avons développé une application 
 
 ## **Données utilisées**
 
-Dans le cadre de notre projet Fullstack, nous avons utilisé un jeu de données provenant de Kaggle, accessible [ici](https://www.kaggle.com/datasets/jealousleopard/goodreadsbooks). Ce fichier CSV renferme des informations détaillées sur les livres que nous explorons au sein de notre application. Il est à noter que lors de l'exploration initiale du jeu de données, nous avons rencontré des défis liés à la présence de virgules au sein de certaines lignes du fichier CSV. Afin de garantir une intégration correcte de ces données dans notre application, nous avons pris l'initiative de modifier le fichier pour assurer une cohérence et une précision optimales.
+Dans le cadre de notre projet Fullstack, nous avons utilisé un jeu de données provenant de Kaggle, accessible [ici](https://www.kaggle.com/datasets/jealousleopard/goodreadsbooks). Ce fichier CSV renferme des informations détaillées sur les livres que nous explorons au sein de notre application. Il est à noter que lors de l'exploration initiale du jeu de données, nous avons rencontré des défis liés à la présence de virgules au sein de certaines lignes du fichier CSV. Afin de garantir une intégration correcte de ces données dans notre application, nous avons pris l'initiative de modifier le fichier.
 
 La description complète de chaque colonne du dataset est disponible sur Kaggle.
 
